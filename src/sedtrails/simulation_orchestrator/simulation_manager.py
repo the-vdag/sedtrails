@@ -1657,9 +1657,10 @@ class Simulation:
                             with self._profile_section('get_flow_field.dashboard'):
                                 dashboard_flow_field = retriever.get_flow_field(field_time_seconds, flow_field_name)
 
+                        def scalar_field(name, _retriever=retriever, _field_time_seconds=field_time_seconds):
+                            return _retriever.get_scalar_field_bounds(_field_time_seconds, name)
+
                         if is_macdonald_q3d:
-                            def scalar_field(name, _retriever=retriever, _field_time_seconds=field_time_seconds):
-                                return _retriever.get_scalar_field_bounds(_field_time_seconds, name)
 
                             def config_value(name, default, _physics_config=physics_config):
                                 return getattr(_physics_config, name, default)
