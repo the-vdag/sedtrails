@@ -51,6 +51,10 @@ _STATUS_DEFAULTS = {
 }
 
 _CORE_FLOAT_FIELDS = ('x', 'y', 'z', 'z_p', 'z_burial', 'burial_depth', 'mixing_depth')
+_MACDONALD_2D_FLOAT_FIELDS = (
+    'macdonald_2d_selected_shear_velocity',
+    'macdonald_2d_max_shear_velocity',
+)
 _Q3D_MIN_FLOAT_FIELDS = (
     'q3d_first_substep_z_p',
     'centroid_particle_velocity_x',
@@ -78,6 +82,7 @@ _Q3D_FULL_FLOAT_FIELDS = (
     'first_substep_water_depth',
     'first_substep_skin_roughness_height',
     'first_substep_max_shear_velocity',
+    'first_substep_selected_shear_velocity',
     'first_substep_profile_roughness_height',
     'first_substep_total_transport_centroid_elevation',
     'first_substep_q3d_velocity_deficit_coefficient',
@@ -92,6 +97,13 @@ _Q3D_INT_FIELDS = (
     'q3d_vertical_update_scheme_code',
     'q3d_motion_substeps',
 )
+
+_VARIABLE_METADATA = {
+    'macdonald_2d_selected_shear_velocity': {'units': 'm/s', 'long_name': 'MacDonald 2D particle-local selected shear velocity before movement'},
+    'macdonald_2d_max_shear_velocity': {'units': 'm/s', 'long_name': 'MacDonald 2D particle-local maximum shear velocity before movement'},
+    'first_substep_selected_shear_velocity': {'units': 'm/s', 'long_name': 'MacDonald Q3D particle-local selected shear velocity at the first substep'},
+    'first_substep_max_shear_velocity': {'units': 'm/s', 'long_name': 'MacDonald Q3D particle-local maximum shear velocity at the first substep'},
+}
 
 
 class NetCDFWriter:
@@ -379,8 +391,8 @@ class NetCDFWriter:
             chunksizes=(time_particle_chunks[0],),
             **compression_kwargs,
         )
-        for var_name in _CORE_FLOAT_FIELDS + q3d_float_fields:
-            ds.createVariable(
+        for var_name in _CORE_FLOAT_FIELDS + _MACDONALD_2D_FLOAT_FIELDS + q3d_float_fields:
+            variable = ds.createVariable(
                 var_name,
                 coordinate_dtype,
                 ('n_timesteps', 'n_particles'),
@@ -388,6 +400,8 @@ class NetCDFWriter:
                 chunksizes=time_particle_chunks,
                 **compression_kwargs,
             )
+            for attr_name, attr_value in _VARIABLE_METADATA.get(var_name, {}).items():
+                setattr(variable, attr_name, attr_value)
         q3d_int_fields = () if str(q3d_diagnostics).lower() == 'none' else _Q3D_INT_FIELDS
         for var_name in q3d_int_fields:
             ds.createVariable(
@@ -430,6 +444,8 @@ class NetCDFWriter:
             for field_name in _CORE_FLOAT_FIELDS:
                 default = 0.0 if field_name == 'z' else np.nan
                 h[field_name][slot_idx, sl] = cls._particle_field(particles, field_name, default)
+            for field_name in _MACDONALD_2D_FLOAT_FIELDS:
+                h[field_name][slot_idx, sl] = cls._particle_field(particles, field_name, np.nan)
             for field_name in _Q3D_MIN_FLOAT_FIELDS + _Q3D_FULL_FLOAT_FIELDS:
                 if field_name in h.variables:
                     h[field_name][slot_idx, sl] = cls._particle_field(particles, field_name, np.nan)
@@ -580,8 +596,8 @@ class NetCDFWriter:
             ds.createVariable('time', 'f8', (), fill_value=np.nan)
             ds['time'][...] = float(current_time)
 
-            for var_name in _CORE_FLOAT_FIELDS + q3d_float_fields:
-                ds.createVariable(
+            for var_name in _CORE_FLOAT_FIELDS + _MACDONALD_2D_FLOAT_FIELDS + q3d_float_fields:
+                variable = ds.createVariable(
                     var_name,
                     coordinate_dtype,
                     ('n_particles',),
@@ -589,6 +605,8 @@ class NetCDFWriter:
                     chunksizes=(particle_chunk,),
                     **compression_kwargs,
                 )
+                for attr_name, attr_value in _VARIABLE_METADATA.get(var_name, {}).items():
+                    setattr(variable, attr_name, attr_value)
             q3d_int_fields = () if str(q3d_diagnostics).lower() == 'none' else _Q3D_INT_FIELDS
             for var_name in q3d_int_fields:
                 ds.createVariable(
@@ -617,6 +635,8 @@ class NetCDFWriter:
                 for field_name in _CORE_FLOAT_FIELDS:
                     default = 0.0 if field_name == 'z' else np.nan
                     ds[field_name][sl] = self._particle_field(particles, field_name, default)
+                for field_name in _MACDONALD_2D_FLOAT_FIELDS:
+                    ds[field_name][sl] = self._particle_field(particles, field_name, np.nan)
                 for field_name in q3d_float_fields:
                     ds[field_name][sl] = self._particle_field(particles, field_name, np.nan)
                 for field_name in q3d_int_fields:
