@@ -1093,7 +1093,8 @@ class Q3DMacdonaldMotionMixin:
             first_substep_bed_level = bed_level.copy()
             first_substep_water_depth = water_depth.copy()
             first_substep_skin_roughness = skin_roughness.copy()
-            first_substep_shear_velocity = np.zeros(n_particles, dtype=float)
+            first_substep_max_shear_velocity = np.full(n_particles, np.nan, dtype=float)
+            first_substep_selected_shear_velocity = np.full(n_particles, np.nan, dtype=float)
             first_substep_profile_roughness = np.zeros(n_particles, dtype=float)
             first_substep_z_c = np.zeros(n_particles, dtype=float)
             first_substep_deficit = np.zeros(n_particles, dtype=float)
@@ -1300,7 +1301,8 @@ class Q3DMacdonaldMotionMixin:
                     first_substep_bed_level[active_indices] = bed_active
                     first_substep_water_depth[active_indices] = waterdepth_active
                     first_substep_skin_roughness[active_indices] = skin_active
-                    first_substep_shear_velocity[active_indices] = max_shear_velocity_active
+                    first_substep_max_shear_velocity[active_indices] = max_shear_velocity_active
+                    first_substep_selected_shear_velocity[active_indices] = selected_shear_velocity_active
                     first_substep_profile_roughness[active_indices] = profile_roughness_active
                     first_substep_z_c[active_indices] = z_c_active
                     first_substep_deficit[active_indices] = deficit_active
@@ -1524,7 +1526,8 @@ class Q3DMacdonaldMotionMixin:
             self.particles['first_substep_bed_level'] = first_substep_bed_level
             self.particles['first_substep_water_depth'] = first_substep_water_depth
             self.particles['first_substep_skin_roughness_height'] = first_substep_skin_roughness
-            self.particles['first_substep_max_shear_velocity'] = first_substep_shear_velocity
+            self.particles['first_substep_max_shear_velocity'] = first_substep_max_shear_velocity
+            self.particles['first_substep_selected_shear_velocity'] = first_substep_selected_shear_velocity
             self.particles['first_substep_profile_roughness_height'] = first_substep_profile_roughness
             self.particles['first_substep_total_transport_centroid_elevation'] = first_substep_z_c
             self.particles['first_substep_q3d_velocity_deficit_coefficient'] = first_substep_deficit
@@ -1545,6 +1548,7 @@ class Q3DMacdonaldMotionMixin:
                 'first_substep_water_depth',
                 'first_substep_skin_roughness_height',
                 'first_substep_max_shear_velocity',
+                'first_substep_selected_shear_velocity',
                 'first_substep_profile_roughness_height',
                 'first_substep_total_transport_centroid_elevation',
                 'first_substep_q3d_velocity_deficit_coefficient',
@@ -1613,6 +1617,8 @@ class Q3DMacdonaldMotionMixin:
         shields_number_field=None,
         settling_height_field=None,
         shear_velocity_field=None,
+        selected_shear_velocity_field=None,
+        max_shear_velocity_field=None,
         entrainment_frequency_field=None,
     ) -> None:
         """Sample entrainment and deposition inputs at the old particle positions."""
@@ -1626,6 +1632,10 @@ class Q3DMacdonaldMotionMixin:
             scalar_fields['macdonald_2d_settling_height'] = settling_height_field
         if shear_velocity_field is not None:
             scalar_fields['macdonald_2d_shear_velocity'] = shear_velocity_field
+        if selected_shear_velocity_field is not None:
+            scalar_fields['macdonald_2d_selected_shear_velocity'] = selected_shear_velocity_field
+        if max_shear_velocity_field is not None:
+            scalar_fields['macdonald_2d_max_shear_velocity'] = max_shear_velocity_field
         if entrainment_frequency_field is not None:
             scalar_fields['macdonald_2d_entrainment_frequency'] = entrainment_frequency_field
         if scalar_fields:

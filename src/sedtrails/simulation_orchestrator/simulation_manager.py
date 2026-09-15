@@ -1740,6 +1740,10 @@ class Simulation:
                                     flow_field,
                                 )
                                 sampling_kwargs = {**deposition_sampling, **entrainment_sampling}
+                                sampling_kwargs.update(
+                                    selected_shear_velocity_field=scalar_field('selected_shear_velocity'),
+                                    max_shear_velocity_field=scalar_field('max_shear_velocity'),
+                                )
                                 with self._profile_section('sample_macdonald_2d_transition_fields'):
                                     population.sample_macdonald_2d_transition_fields(
                                         **sampling_kwargs,

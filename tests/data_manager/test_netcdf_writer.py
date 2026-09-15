@@ -252,6 +252,27 @@ class TestNetCDFWriterStreaming:
         assert 'q3d_first_substep_z_p' not in handle.variables
         assert 'q3d_motion_substeps' not in handle.variables
         assert 'vertical_position_initialized' in handle.variables
+        assert 'macdonald_2d_selected_shear_velocity' in handle.variables
+        assert 'macdonald_2d_max_shear_velocity' in handle.variables
+        handle.close()
+
+    def test_streaming_writes_shear_diagnostics_and_nan_for_other_population(self, writer):
+        pop_2d = MockPopulation('2d')
+        pop_q3d = MockPopulation('q3d')
+        pop_2d.particles['macdonald_2d_selected_shear_velocity'] = np.array([0.01, 0.02, 0.03])
+        pop_2d.particles['macdonald_2d_max_shear_velocity'] = np.array([0.04, 0.05, 0.06])
+        pop_q3d.particles['first_substep_selected_shear_velocity'] = np.array([0.07, 0.08, 0.09])
+        pop_q3d.particles['first_substep_max_shear_velocity'] = np.array([0.10, 0.11, 0.12])
+        handle = writer.open_output(
+            'shear.nc', 1, 6, 2, 1, [pop_2d, pop_q3d], ['vel'], q3d_diagnostics='full'
+        )
+        writer.record_output(handle, [pop_2d, pop_q3d], slot_idx=0, current_time=0.0)
+
+        np.testing.assert_allclose(handle['macdonald_2d_selected_shear_velocity'][0, :3], [0.01, 0.02, 0.03])
+        assert np.all(np.ma.getmaskarray(handle['macdonald_2d_selected_shear_velocity'][0, 3:]))
+        np.testing.assert_allclose(handle['first_substep_selected_shear_velocity'][0, 3:], [0.07, 0.08, 0.09])
+        assert np.all(np.ma.getmaskarray(handle['first_substep_selected_shear_velocity'][0, :3]))
+        assert handle['first_substep_selected_shear_velocity'].units == 'm/s'
         handle.close()
 
     def test_unwritten_slots_are_fill_values(self, writer, population):
@@ -317,6 +338,8 @@ class TestNetCDFWriterStreaming:
         handle.close()
 
     def test_write_checkpoint_stores_current_particle_state(self, writer, population):
+        population.particles['macdonald_2d_selected_shear_velocity'] = np.array([0.01, 0.02, 0.03])
+        population.particles['macdonald_2d_max_shear_velocity'] = np.array([0.04, 0.05, 0.06])
         path = writer.write_checkpoint(
             'sedtrails_checkpoint.nc',
             [population],
@@ -338,6 +361,9 @@ class TestNetCDFWriterStreaming:
         np.testing.assert_array_equal(ds['population_name'].values, ['test_pop'])
         np.testing.assert_array_equal(ds['population_particle_type'].values, ['sand'])
         np.testing.assert_array_equal(ds['flowfield_name'].values, [''])
+        np.testing.assert_allclose(ds['macdonald_2d_selected_shear_velocity'], [0.01, 0.02, 0.03])
+        np.testing.assert_allclose(ds['macdonald_2d_max_shear_velocity'], [0.04, 0.05, 0.06])
+        assert ds['macdonald_2d_selected_shear_velocity'].attrs['units'] == 'm/s'
         ds.close()
 
     def test_checkpoint_missing_q3d_integer_fields_are_missing(self, writer, population):
@@ -354,6 +380,22 @@ class TestNetCDFWriterStreaming:
         for field_name in ('q3d_vertical_update_scheme_code', 'q3d_motion_substeps'):
             assert np.all(ds[field_name].isnull())
             assert ds[field_name].encoding['_FillValue'] == np.int32(-1)
+        ds.close()
+
+    def test_checkpoint_writes_q3d_first_substep_shear_diagnostics(self, writer, population):
+        fields = {
+            'first_substep_selected_shear_velocity': np.array([0.01, 0.02, 0.03]),
+            'first_substep_max_shear_velocity': np.array([0.04, 0.05, 0.06]),
+        }
+        population.particles.update(fields)
+        path = writer.write_checkpoint(
+            'q3d_checkpoint.nc', [population], current_time=123.0, q3d_diagnostics='full'
+        )
+
+        ds = xr.open_dataset(path, engine='netcdf4')
+        for field_name, expected in fields.items():
+            np.testing.assert_allclose(ds[field_name], expected)
+            assert ds[field_name].attrs['units'] == 'm/s'
         ds.close()
 
     def test_write_end_positions_stores_compact_result_state(self, writer, population):

@@ -3009,9 +3009,12 @@ def test_q3d_full_update_refreshes_selected_shear_between_substeps():
         q3d_horizontal_diffusion_enabled=False,
         q3d_vertical_update_scheme='centroid_floor',
         q3d_motion_substeps=2,
+        q3d_save_first_substep_diagnostics=True,
     )
 
     assert population.particles['x'][0] > 0.25
+    np.testing.assert_allclose(population.particles['first_substep_max_shear_velocity'], [1.0])
+    np.testing.assert_allclose(population.particles['first_substep_selected_shear_velocity'], [0.002])
     assert population.particles['selected_shear_velocity'][0] > 0.002
     assert population.particles['vertical_position_initialized'].tolist() == [True]
     assert population.particles['status_suspended'].tolist() == [True]
@@ -3164,6 +3167,20 @@ def test_macdonald_2d_shields_threshold_deposits_and_reentrains():
     assert population.particles['status_deposited'].tolist() == [False]
     assert population.particles['status_suspended'].tolist() == [True]
     assert population.particles['status_mobile'].tolist() == [True]
+
+
+def test_macdonald_2d_samples_particle_local_shear_velocity_diagnostics():
+    population = _macdonald_2d_test_population()
+
+    population.sample_macdonald_2d_transition_fields(
+        selected_shear_velocity_field=np.array([0.01, 0.03, 0.03, 0.01]),
+        max_shear_velocity_field=np.array([0.02, 0.06, 0.06, 0.02]),
+        shear_velocity_field=np.full(4, 0.07),
+    )
+
+    np.testing.assert_allclose(population.particles['macdonald_2d_selected_shear_velocity'], [0.02])
+    np.testing.assert_allclose(population.particles['macdonald_2d_max_shear_velocity'], [0.04])
+    np.testing.assert_allclose(population.particles['macdonald_2d_shear_velocity'], [0.07])
 
 
 def test_macdonald_2d_frequency_entrainment_uses_poisson_probability():
