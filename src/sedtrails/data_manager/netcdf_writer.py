@@ -99,11 +99,67 @@ _Q3D_INT_FIELDS = (
 )
 
 _VARIABLE_METADATA = {
+    'time': {'units': 's', 'long_name': 'Simulation time'},
+    'x': {'units': 'm', 'long_name': 'Particle horizontal x-coordinate'},
+    'y': {'units': 'm', 'long_name': 'Particle horizontal y-coordinate'},
+    'z': {'units': 'm', 'long_name': 'Particle absolute vertical position'},
+    'z_p': {'units': 'm', 'long_name': 'Particle height above the local bed'},
+    'z_burial': {'units': 'm', 'long_name': 'Particle burial elevation'},
+    'burial_depth': {'units': 'm', 'long_name': 'Particle burial depth below the local bed'},
+    'mixing_depth': {'units': 'm', 'long_name': 'Local sediment mixing-layer depth'},
+    'population_name': {'long_name': 'Particle population name'},
+    'population_particle_type': {'long_name': 'Particle type of each population'},
+    'population_start_idx': {'units': '1', 'long_name': 'First trajectory index of each population'},
+    'population_count': {'units': '1', 'long_name': 'Number of particles in each population'},
+    'population_repr_volume': {'units': 'm3', 'long_name': 'Representative volume per particle population'},
+    'trajectory_id': {'units': '1', 'long_name': 'Unique particle trajectory identifier'},
+    'population_id': {'units': '1', 'long_name': 'Population identifier for each particle'},
+    'flowfield_name': {'long_name': 'Configured particle flow-field name'},
+    'q3d_first_substep_z_p': {'units': 'm', 'long_name': 'Particle height above the local bed at the first Q3D substep'},
+    'centroid_particle_velocity_x': {'units': 'm/s', 'long_name': 'MacDonald centroid particle velocity in the x-direction'},
+    'centroid_particle_velocity_y': {'units': 'm/s', 'long_name': 'MacDonald centroid particle velocity in the y-direction'},
+    'centroid_particle_velocity': {'units': 'm/s', 'long_name': 'Magnitude of the MacDonald centroid particle velocity'},
+    'first_substep_modified_centroid_particle_velocity_x': {'units': 'm/s', 'long_name': 'Modified centroid particle velocity in the x-direction at the first Q3D substep'},
+    'first_substep_modified_centroid_particle_velocity_y': {'units': 'm/s', 'long_name': 'Modified centroid particle velocity in the y-direction at the first Q3D substep'},
+    'first_substep_modified_centroid_particle_velocity': {'units': 'm/s', 'long_name': 'Magnitude of modified centroid particle velocity at the first Q3D substep'},
+    'first_substep_horizontal_particle_velocity_x': {'units': 'm/s', 'long_name': 'Horizontal particle velocity in the x-direction at the first Q3D substep'},
+    'first_substep_horizontal_particle_velocity_y': {'units': 'm/s', 'long_name': 'Horizontal particle velocity in the y-direction at the first Q3D substep'},
+    'first_substep_horizontal_particle_velocity': {'units': 'm/s', 'long_name': 'Magnitude of horizontal particle velocity at the first Q3D substep'},
+    'first_substep_vertical_particle_velocity': {'units': 'm/s', 'long_name': 'Vertical particle velocity at the first Q3D substep'},
+    'q3d_entrainment_probability': {'units': '1', 'long_name': 'Q3D particle entrainment probability'},
+    'q3d_entrainment_height_above_bed': {'units': 'm', 'long_name': 'Q3D particle entrainment height above the local bed'},
+    'first_substep_horizontal_diffusion_velocity_x': {'units': 'm/s', 'long_name': 'Horizontal diffusion velocity in the x-direction at the first Q3D substep'},
+    'first_substep_horizontal_diffusion_velocity_y': {'units': 'm/s', 'long_name': 'Horizontal diffusion velocity in the y-direction at the first Q3D substep'},
+    'first_substep_horizontal_diffusion_velocity': {'units': 'm/s', 'long_name': 'Magnitude of horizontal diffusion velocity at the first Q3D substep'},
+    'first_substep_vertical_advection_velocity': {'units': 'm/s', 'long_name': 'Vertical advection velocity at the first Q3D substep'},
+    'first_substep_vertical_diffusion_velocity': {'units': 'm/s', 'long_name': 'Vertical diffusion velocity at the first Q3D substep'},
+    'first_substep_horizontal_diffusion_coefficient': {'units': 'm2/s', 'long_name': 'Horizontal diffusion coefficient at the first Q3D substep'},
+    'first_substep_vertical_diffusion_coefficient': {'units': 'm2/s', 'long_name': 'Vertical diffusion coefficient at the first Q3D substep'},
+    'first_substep_bed_level': {'units': 'm', 'long_name': 'Local bed elevation at the first Q3D substep'},
+    'first_substep_water_depth': {'units': 'm', 'long_name': 'Local water depth at the first Q3D substep'},
+    'first_substep_skin_roughness_height': {'units': 'm', 'long_name': 'Local skin roughness height at the first Q3D substep'},
     'macdonald_2d_selected_shear_velocity': {'units': 'm/s', 'long_name': 'MacDonald 2D particle-local selected shear velocity before movement'},
     'macdonald_2d_max_shear_velocity': {'units': 'm/s', 'long_name': 'MacDonald 2D particle-local maximum shear velocity before movement'},
     'first_substep_selected_shear_velocity': {'units': 'm/s', 'long_name': 'MacDonald Q3D particle-local selected shear velocity at the first substep'},
     'first_substep_max_shear_velocity': {'units': 'm/s', 'long_name': 'MacDonald Q3D particle-local maximum shear velocity at the first substep'},
+    'first_substep_profile_roughness_height': {'units': 'm', 'long_name': 'Profile roughness height at the first Q3D substep'},
+    'first_substep_total_transport_centroid_elevation': {'units': 'm', 'long_name': 'Total-transport centroid height above bed at the first Q3D substep'},
+    'first_substep_q3d_velocity_deficit_coefficient': {'units': '1', 'long_name': 'Q3D velocity-deficit coefficient at the first substep'},
+    'first_substep_q3d_vertical_velocity_gradient': {'units': '1/s', 'long_name': 'Q3D vertical velocity gradient at the first substep'},
+    'first_substep_settling_velocity': {'units': 'm/s', 'long_name': 'Particle settling velocity at the first Q3D substep'},
+    'first_substep_depth_avg_flow_velocity_magnitude': {'units': 'm/s', 'long_name': 'Depth-averaged flow-speed magnitude at the first Q3D substep'},
+    'first_substep_rouse_number': {'units': '1', 'long_name': 'Particle Rouse number at the first Q3D substep'},
+    'turbulent_shields_number': {'units': '1', 'long_name': 'Particle-local turbulent Shields number'},
+    'critical_shields_number': {'units': '1', 'long_name': 'Critical Shields number of the particle population'},
+    'q3d_vertical_update_scheme_code': {'units': '1', 'long_name': 'Code identifying the Q3D vertical update scheme'},
+    'q3d_motion_substeps': {'units': '1', 'long_name': 'Number of Q3D motion substeps'},
 }
+
+for _status_name in _STATUS_DEFAULTS:
+    _VARIABLE_METADATA[_status_name] = {
+        'units': '1',
+        'long_name': _status_name.replace('status_', 'Particle status: ').replace('_', ' '),
+    }
 
 
 class NetCDFWriter:
@@ -422,6 +478,11 @@ class NetCDFWriter:
                 **compression_kwargs,
             )
 
+        for var_name, metadata in _VARIABLE_METADATA.items():
+            if var_name in ds.variables:
+                for attr_name, attr_value in metadata.items():
+                    setattr(ds[var_name], attr_name, attr_value)
+
         # Store path so record_output can reopen on network/HDF errors
         self._streaming_path = str(output_path)
         self._write_count = 0
@@ -595,6 +656,8 @@ class NetCDFWriter:
 
             ds.createVariable('time', 'f8', (), fill_value=np.nan)
             ds['time'][...] = float(current_time)
+            if time_units is not None:
+                ds['time'].units = str(time_units)
 
             for var_name in _CORE_FLOAT_FIELDS + _MACDONALD_2D_FLOAT_FIELDS + q3d_float_fields:
                 variable = ds.createVariable(
@@ -626,6 +689,11 @@ class NetCDFWriter:
                     chunksizes=(particle_chunk,),
                     **compression_kwargs,
                 )
+
+            for var_name, metadata in _VARIABLE_METADATA.items():
+                if var_name in ds.variables:
+                    for attr_name, attr_value in metadata.items():
+                        setattr(ds[var_name], attr_name, attr_value)
 
             particle_offset = 0
             for population in populations:

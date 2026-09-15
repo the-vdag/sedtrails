@@ -92,6 +92,17 @@ class TestNetCDFWriterStreaming:
         np.testing.assert_array_equal(open_handle['trajectory_id'][:], np.arange(self.N_PARTICLES))
         assert open_handle['x'].chunking() == [1, self.N_PARTICLES]
 
+    def test_all_exported_variables_have_descriptive_metadata(self, open_handle):
+        string_variables = {
+            'population_name',
+            'population_particle_type',
+            'flowfield_name',
+        }
+        for name, variable in open_handle.variables.items():
+            assert variable.long_name
+            if name not in string_variables:
+                assert variable.units
+
     def test_open_writes_population_metadata(self, open_handle):
         assert open_handle['population_count'][0] == self.N_PARTICLES
         assert open_handle['population_start_idx'][0] == 0
