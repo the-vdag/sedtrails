@@ -265,6 +265,12 @@ class TestNetCDFWriterStreaming:
         assert 'vertical_position_initialized' in handle.variables
         assert 'macdonald_2d_selected_shear_velocity' in handle.variables
         assert 'macdonald_2d_max_shear_velocity' in handle.variables
+        assert 'centroid_particle_velocity_x' in handle.variables
+        assert 'centroid_particle_velocity_y' in handle.variables
+        assert 'centroid_particle_velocity' in handle.variables
+        description = handle['centroid_particle_velocity'].description
+        assert 'pre-movement position' in description
+        assert 'status_mobile' in description
         handle.close()
 
     def test_streaming_writes_shear_diagnostics_and_nan_for_other_population(self, writer):

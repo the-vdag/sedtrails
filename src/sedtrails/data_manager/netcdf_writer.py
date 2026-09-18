@@ -54,12 +54,12 @@ _CORE_FLOAT_FIELDS = ('x', 'y', 'z', 'z_p', 'z_burial', 'burial_depth', 'mixing_
 _MACDONALD_2D_FLOAT_FIELDS = (
     'macdonald_2d_selected_shear_velocity',
     'macdonald_2d_max_shear_velocity',
-)
-_Q3D_MIN_FLOAT_FIELDS = (
-    'q3d_first_substep_z_p',
     'centroid_particle_velocity_x',
     'centroid_particle_velocity_y',
     'centroid_particle_velocity',
+)
+_Q3D_MIN_FLOAT_FIELDS = (
+    'q3d_first_substep_z_p',
     'first_substep_modified_centroid_particle_velocity_x',
     'first_substep_modified_centroid_particle_velocity_y',
     'first_substep_modified_centroid_particle_velocity',
@@ -116,9 +116,21 @@ _VARIABLE_METADATA = {
     'population_id': {'units': '1', 'long_name': 'Population identifier for each particle'},
     'flowfield_name': {'long_name': 'Configured particle flow-field name'},
     'q3d_first_substep_z_p': {'units': 'm', 'long_name': 'Particle height above the local bed at the first Q3D substep'},
-    'centroid_particle_velocity_x': {'units': 'm/s', 'long_name': 'MacDonald centroid particle velocity in the x-direction'},
-    'centroid_particle_velocity_y': {'units': 'm/s', 'long_name': 'MacDonald centroid particle velocity in the y-direction'},
-    'centroid_particle_velocity': {'units': 'm/s', 'long_name': 'Magnitude of the MacDonald centroid particle velocity'},
+    'centroid_particle_velocity_x': {
+        'units': 'm/s',
+        'long_name': 'MacDonald centroid particle velocity in the x-direction',
+        'description': 'In MacDonald 2D, the local centroid advection field sampled at the particle pre-movement position. It may be nonzero for deposited or non-mobile particles; use status_mobile to identify actual mobility.',
+    },
+    'centroid_particle_velocity_y': {
+        'units': 'm/s',
+        'long_name': 'MacDonald centroid particle velocity in the y-direction',
+        'description': 'In MacDonald 2D, the local centroid advection field sampled at the particle pre-movement position. It may be nonzero for deposited or non-mobile particles; use status_mobile to identify actual mobility.',
+    },
+    'centroid_particle_velocity': {
+        'units': 'm/s',
+        'long_name': 'Magnitude of the MacDonald centroid particle velocity',
+        'description': 'In MacDonald 2D, the local centroid advection field sampled at the particle pre-movement position. It may be nonzero for deposited or non-mobile particles; use status_mobile to identify actual mobility.',
+    },
     'first_substep_modified_centroid_particle_velocity_x': {'units': 'm/s', 'long_name': 'Modified centroid particle velocity in the x-direction at the first Q3D substep'},
     'first_substep_modified_centroid_particle_velocity_y': {'units': 'm/s', 'long_name': 'Modified centroid particle velocity in the y-direction at the first Q3D substep'},
     'first_substep_modified_centroid_particle_velocity': {'units': 'm/s', 'long_name': 'Magnitude of modified centroid particle velocity at the first Q3D substep'},

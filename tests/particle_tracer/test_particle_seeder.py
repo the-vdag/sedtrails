@@ -3147,6 +3147,9 @@ def test_macdonald_2d_shields_threshold_deposits_and_reentrains():
         particle_velocity_field=_constant_flow_field(1.0),
         shields_number_field=np.full(4, 0.04),
     )
+    np.testing.assert_allclose(population.particles['centroid_particle_velocity_x'], [1.0])
+    np.testing.assert_allclose(population.particles['centroid_particle_velocity_y'], [0.0])
+    np.testing.assert_allclose(population.particles['centroid_particle_velocity'], [1.0])
     population.update_macdonald_2d_deposition(
         method='shields_threshold',
         critical_shields_number=0.05,

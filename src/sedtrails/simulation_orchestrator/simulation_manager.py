@@ -1741,6 +1741,9 @@ class Simulation:
                                     flow_field,
                                 )
                                 sampling_kwargs = {**deposition_sampling, **entrainment_sampling}
+                                # The M2D advecting field is the MacDonald centroid velocity.
+                                # Sample it for trajectory output regardless of transition method.
+                                sampling_kwargs['particle_velocity_field'] = flow_field
                                 sampling_kwargs.update(
                                     selected_shear_velocity_field=scalar_field('selected_shear_velocity'),
                                     max_shear_velocity_field=scalar_field('max_shear_velocity'),

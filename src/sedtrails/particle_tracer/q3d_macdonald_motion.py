@@ -1642,6 +1642,15 @@ class Q3DMacdonaldMotionMixin:
             self._update_particle_fields(scalar_fields)
         if particle_velocity_field is not None:
             self._update_particle_flow_field('macdonald_2d_particle_velocity', particle_velocity_field)
+            self.particles['centroid_particle_velocity_x'] = (
+                self.particles['macdonald_2d_particle_velocity_u'].copy()
+            )
+            self.particles['centroid_particle_velocity_y'] = (
+                self.particles['macdonald_2d_particle_velocity_v'].copy()
+            )
+            self.particles['centroid_particle_velocity'] = (
+                self.particles['macdonald_2d_particle_velocity_magnitude'].copy()
+            )
 
     def update_macdonald_2d_entrainment(
         self,
