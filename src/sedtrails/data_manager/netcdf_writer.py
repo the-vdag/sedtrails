@@ -172,9 +172,15 @@ _VARIABLE_METADATA = {
     'first_substep_total_transport_centroid_elevation': {'units': 'm', 'long_name': 'Total-transport centroid height above bed at the first Q3D substep'},
     'first_substep_q3d_velocity_deficit_coefficient': {'units': '1', 'long_name': 'Q3D velocity-deficit coefficient at the first substep'},
     'first_substep_q3d_vertical_velocity_gradient': {'units': '1/s', 'long_name': 'Q3D vertical velocity gradient at the first substep'},
-    'first_substep_settling_velocity': {'units': 'm/s', 'long_name': 'Particle settling velocity at the first Q3D substep'},
+    'first_substep_settling_velocity': {
+        'units': 'm/s', 'long_name': 'Particle settling velocity at the first Q3D substep',
+        'comment': 'Defined for released in-domain particles, including deposited particles; NaN otherwise.',
+    },
     'first_substep_depth_avg_flow_velocity_magnitude': {'units': 'm/s', 'long_name': 'Depth-averaged flow-speed magnitude at the first Q3D substep'},
-    'first_substep_rouse_number': {'units': '1', 'long_name': 'Particle Rouse number at the first Q3D substep'},
+    'first_substep_rouse_number': {
+        'units': '1', 'long_name': 'Particle Rouse number at the first Q3D substep',
+        'comment': 'Defined for released, suspended, in-domain particles; NaN otherwise.',
+    },
     'turbulent_shields_number': {'units': '1', 'long_name': 'Particle-local turbulent Shields number'},
     'critical_shields_number': {'units': '1', 'long_name': 'Critical Shields number of the particle population'},
     'q3d_vertical_update_scheme_code': {'units': '1', 'long_name': 'Code identifying the Q3D vertical update scheme'},

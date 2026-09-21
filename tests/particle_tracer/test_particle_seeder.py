@@ -3027,6 +3027,14 @@ def test_q3d_full_update_refreshes_selected_shear_between_substeps(vertical_sche
         population.particles['q3d_deposition_threshold_height'],
         [0.00025],
     )
+    np.testing.assert_allclose(
+        population.particles['first_substep_settling_velocity'],
+        [0.0],
+    )
+    np.testing.assert_allclose(
+        population.particles['first_substep_rouse_number'],
+        [1.0],
+    )
 
 
 def test_q3d_boundary_exit_does_not_require_preexisting_mobile_state():

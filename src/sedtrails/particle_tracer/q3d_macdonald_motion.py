@@ -1116,9 +1116,9 @@ class Q3DMacdonaldMotionMixin:
             first_substep_z_c = np.zeros(n_particles, dtype=float)
             first_substep_deficit = np.zeros(n_particles, dtype=float)
             first_substep_vertical_velocity_gradient = np.zeros(n_particles, dtype=float)
-            first_substep_settling_velocity = np.zeros(n_particles, dtype=float)
+            first_substep_settling_velocity = np.full(n_particles, np.nan, dtype=float)
             first_substep_flow_magnitude = np.zeros(n_particles, dtype=float)
-            first_substep_rouse_number = np.zeros(n_particles, dtype=float)
+            first_substep_rouse_number = np.full(n_particles, np.nan, dtype=float)
         vertical_scheme_codes = {'geometric': 0, 'centroid_floor': 1, 'rouse_profile': 2}
 
         for substep_index in range(substeps):
@@ -1336,10 +1336,9 @@ class Q3DMacdonaldMotionMixin:
                     first_substep_settling_velocity[active_indices] = settling_active
                     first_substep_flow_magnitude[active_indices] = da_velocity_magnitude_active
                     if 'rouse_number' in self.particles:
-                        first_substep_rouse_number[active_indices] = np.nan_to_num(
-                            np.asarray(self.particles['rouse_number'], dtype=float)[active_indices],
-                            nan=0.0,
-                        )
+                        first_substep_rouse_number[active_indices] = np.asarray(
+                            self.particles['rouse_number'], dtype=float
+                        )[active_indices]
                 first_substep_diagnostics_saved = True
 
             # Horizontal move first using the Q3D particle velocity from the
@@ -1556,6 +1555,13 @@ class Q3DMacdonaldMotionMixin:
             first_substep_particle_w.fill(np.nan)
         self.particles['first_substep_vertical_particle_velocity'] = first_substep_particle_w
         if save_first_substep_diagnostics:
+            settling_mask = is_released & is_inside
+            first_substep_settling_velocity.fill(np.nan)
+            first_substep_settling_velocity[settling_mask] = np.asarray(
+                self.particles['settling_velocity'], dtype=float
+            )[settling_mask]
+            rouse_mask = is_released & is_inside & is_suspended
+            first_substep_rouse_number[~rouse_mask] = np.nan
             self.particles['first_substep_horizontal_diffusion_velocity_x'] = first_substep_horizontal_diffusion_velocity_x
             self.particles['first_substep_horizontal_diffusion_velocity_y'] = first_substep_horizontal_diffusion_velocity_y
             self.particles['first_substep_horizontal_diffusion_velocity'] = np.hypot(
