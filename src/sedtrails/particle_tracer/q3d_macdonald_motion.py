@@ -666,6 +666,19 @@ class Q3DMacdonaldMotionMixin:
 
         return np.clip(np.nan_to_num(z_p_new, nan=0.0, posinf=0.0, neginf=0.0), 0.0, water_depth_new)
 
+    @staticmethod
+    def _q3d_deposition_threshold(parameter, value, aks_factor, skin_roughness, grain_diameter, water_depth):
+        parameter = str(parameter).strip().lower().replace('-', '_')
+        skin_roughness = np.maximum(np.nan_to_num(skin_roughness, nan=0.0), 0.0)
+        water_depth = np.maximum(np.nan_to_num(water_depth, nan=0.0), 0.0)
+        if parameter == 'skin_roughness':
+            return float(value) * skin_roughness
+        if parameter == 'grain_diameter':
+            return np.full_like(water_depth, float(value) * float(grain_diameter))
+        if parameter == 'reference_height':
+            return np.minimum(np.maximum(float(aks_factor) * skin_roughness, 0.01 * water_depth), 0.20 * water_depth)
+        raise ValueError(f'Unsupported Q3D deposition threshold_parameter {parameter!r}.')
+
     def update_q3d_particle_position(
         self,
         current_timestep: float,
@@ -695,6 +708,10 @@ class Q3DMacdonaldMotionMixin:
         entrainment_frequency: Any = None,
         entrainment_probability_law: str = 'poisson',
         q3d_vertical_update_scheme: str = 'geometric',
+        q3d_deposition_threshold_parameter: str = 'skin_roughness',
+        q3d_deposition_threshold_value: float = 0.25,
+        q3d_deposition_aks_factor: float = 1.0,
+        grain_diameter: float = 0.0,
         q3d_motion_substeps: int = 1,
         q3d_save_first_substep_diagnostics: bool | None = None,
         q3d_diagnostics: str = 'minimal',
@@ -1417,7 +1434,14 @@ class Q3DMacdonaldMotionMixin:
                 ),
                 0.0,
             )
-            deposition_threshold_active = 0.25 * skin_roughness_new_active
+            deposition_threshold_active = self._q3d_deposition_threshold(
+                q3d_deposition_threshold_parameter,
+                q3d_deposition_threshold_value,
+                q3d_deposition_aks_factor,
+                skin_roughness_new_active,
+                grain_diameter,
+                water_depth_new_active,
+            )
 
             # Prepare verical scheme inputs.
             if vertical_update_scheme in {'centroid_floor', 'rouse_profile'}:
@@ -1510,6 +1534,14 @@ class Q3DMacdonaldMotionMixin:
         self.particles['centroid_particle_velocity'] = centroid_magnitude
         self.particles['z'] = z
         self.particles['z_p'] = height_above_bed
+        self.particles['q3d_deposition_threshold_height'] = self._q3d_deposition_threshold(
+            q3d_deposition_threshold_parameter,
+            q3d_deposition_threshold_value,
+            q3d_deposition_aks_factor,
+            self.particles['skin_roughness_height'],
+            grain_diameter,
+            self.particles['water_depth'],
+        )
         self.particles['q3d_first_substep_z_p'] = first_substep_z_p
         self.particles['first_substep_modified_centroid_particle_velocity_x'] = first_substep_modified_u
         self.particles['first_substep_modified_centroid_particle_velocity_y'] = first_substep_modified_v

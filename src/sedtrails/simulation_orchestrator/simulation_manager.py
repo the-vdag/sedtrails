@@ -1666,6 +1666,7 @@ class Simulation:
                                 return getattr(_physics_config, name, default)
 
                             entrainment_config = config_value('entrainment', {}) or {}
+                            deposition_config = config_value('deposition', {}) or {}
                             entrainment_method = str(
                                 entrainment_config.get('method', 'shields_threshold')
                             ).lower().replace('-', '_')
@@ -1708,6 +1709,10 @@ class Simulation:
                                         'poisson',
                                     ),
                                     q3d_vertical_update_scheme=config_value('q3d_vertical_update_scheme', 'geometric'),
+                                    q3d_deposition_threshold_parameter=deposition_config.get('threshold_parameter', 'skin_roughness'),
+                                    q3d_deposition_threshold_value=deposition_config.get('threshold_value', 0.25),
+                                    q3d_deposition_aks_factor=deposition_config.get('AksFac', 1.0),
+                                    grain_diameter=physics_config.grain_diameter,
                                     q3d_motion_substeps=config_value('q3d_motion_substeps', 1),
                                     q3d_save_first_substep_diagnostics=config_value(
                                         'q3d_save_first_substep_diagnostics',

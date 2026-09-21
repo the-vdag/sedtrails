@@ -69,6 +69,7 @@ _Q3D_MIN_FLOAT_FIELDS = (
     'first_substep_vertical_particle_velocity',
     'q3d_entrainment_probability',
     'q3d_entrainment_height_above_bed',
+    'q3d_deposition_threshold_height',
 )
 _Q3D_FULL_FLOAT_FIELDS = (
     'first_substep_horizontal_diffusion_velocity_x',
@@ -148,6 +149,11 @@ _VARIABLE_METADATA = {
     },
     'q3d_entrainment_probability': {'units': '1', 'long_name': 'Q3D particle entrainment probability'},
     'q3d_entrainment_height_above_bed': {'units': 'm', 'long_name': 'Q3D particle entrainment height above the local bed'},
+    'q3d_deposition_threshold_height': {
+        'units': 'm',
+        'long_name': 'Q3D particle deposition threshold height above the local bed',
+        'comment': 'Local threshold used to compare against z_p for the Q3D deposition decision.',
+    },
     'first_substep_horizontal_diffusion_velocity_x': {'units': 'm/s', 'long_name': 'Horizontal diffusion velocity in the x-direction at the first Q3D substep'},
     'first_substep_horizontal_diffusion_velocity_y': {'units': 'm/s', 'long_name': 'Horizontal diffusion velocity in the y-direction at the first Q3D substep'},
     'first_substep_horizontal_diffusion_velocity': {'units': 'm/s', 'long_name': 'Magnitude of horizontal diffusion velocity at the first Q3D substep'},

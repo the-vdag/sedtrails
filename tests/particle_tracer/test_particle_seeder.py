@@ -3023,6 +3023,10 @@ def test_q3d_full_update_refreshes_selected_shear_between_substeps(vertical_sche
     assert population.particles['status_suspended'].tolist() == [True]
     assert population.particles['z'][0] >= population.particles['bed_level'][0]
     assert np.isnan(population.particles['first_substep_vertical_particle_velocity']).all()
+    np.testing.assert_allclose(
+        population.particles['q3d_deposition_threshold_height'],
+        [0.00025],
+    )
 
 
 def test_q3d_boundary_exit_does_not_require_preexisting_mobile_state():

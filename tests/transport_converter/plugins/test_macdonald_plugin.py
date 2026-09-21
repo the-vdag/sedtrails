@@ -115,6 +115,19 @@ def test_total_transport_centroid_is_finite_and_bounded_at_low_shear():
     assert centroid_floor_height[0] < water_depth[0]
 
 
+@pytest.mark.parametrize(('parameter', 'expected'), [
+    ('skin_roughness', [0.0005, 0.001]),
+    ('grain_diameter', [0.000125, 0.000125]),
+    ('reference_height', [0.02, 0.03]),
+])
+def test_q3d_deposition_threshold_parameters(parameter, expected):
+    result = Q3DMacdonaldMotionMixin._q3d_deposition_threshold(
+        parameter, 0.5, 1.0, np.array([0.001, 0.002]), 0.00025,
+        np.array([2.0, 3.0]),
+    )
+    np.testing.assert_allclose(result, expected)
+
+
 def _macdonald_eq27_z_over_h(rouse_number):
     """Independent reference implementation of MacDonald et al. (2006) Eq. 27.
 

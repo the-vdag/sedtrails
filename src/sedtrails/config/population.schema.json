@@ -161,6 +161,23 @@
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {
+                    "threshold_parameter": {
+                      "type": "string",
+                      "enum": ["skin_roughness", "reference_height", "grain_diameter"],
+                      "default": "skin_roughness",
+                      "description": "Q3D deposition-height parameter. reference_height uses the no-wave Van Rijn reference-height formulation."
+                    },
+                    "threshold_value": {
+                      "type": "number",
+                      "minimum": 0.0,
+                      "default": 0.25
+                    },
+                    "AksFac": {
+                      "type": "number",
+                      "minimum": 0.0,
+                      "default": 1.0,
+                      "description": "Van Rijn AksFac used by reference_height. The wave-ripple term is omitted."
+                    },
                     "method": {
                       "type": "string",
                       "enum": ["shields_threshold", "markov_settling"],
