@@ -347,6 +347,47 @@ def test_macdonald_required_fields_include_markov_settling_height(
     assert expected_field in fields
 
 
+@pytest.mark.parametrize(
+    ('vertical_scheme', 'has_gradient', 'has_rouse'),
+    [
+        ('geometric', True, False),
+        ('centroid_floor', False, False),
+        ('rouse_profile', False, True),
+    ],
+)
+def test_macdonald_q3d_required_fields_follow_vertical_scheme(
+    vertical_scheme,
+    has_gradient,
+    has_rouse,
+):
+    fields = required_physics_fields(
+        'macdonald',
+        ['centroid_particle_velocity'],
+        {
+            'computationType': 'Q3D',
+            'q3d_vertical_update_scheme': vertical_scheme,
+        },
+    )
+
+    assert ('q3d_vertical_velocity_gradient' in fields) is has_gradient
+    assert ('rouse_number' in fields) is has_rouse
+
+
+def test_macdonald_q3d_full_diagnostics_preserve_rouse_number():
+    fields = required_physics_fields(
+        'macdonald',
+        ['centroid_particle_velocity'],
+        {
+            'computationType': 'Q3D',
+            'q3d_vertical_update_scheme': 'centroid_floor',
+            'q3d_save_first_substep_diagnostics': True,
+        },
+    )
+
+    assert 'rouse_number' in fields
+    assert 'q3d_vertical_velocity_gradient' not in fields
+
+
 def test_build_plan_sedtrails_data_copies_only_required_physics_fields():
     """Copy only required converted physics fields into plan-local sedtrails data."""
     source_data = _FakeSedtrailsData()

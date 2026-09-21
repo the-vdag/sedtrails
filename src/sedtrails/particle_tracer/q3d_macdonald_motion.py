@@ -931,7 +931,6 @@ class Q3DMacdonaldMotionMixin:
             'profile_roughness_height',
             'total_transport_centroid_elevation',
             'q3d_velocity_deficit_coefficient',
-            'q3d_vertical_velocity_gradient',
             'turbulent_shields_number',
             'critical_shields_number',
             'settling_velocity',
@@ -942,7 +941,9 @@ class Q3DMacdonaldMotionMixin:
             'depth_avg_flow_velocity_v',
             'depth_avg_flow_velocity_magnitude',
         )
-        if vertical_update_scheme == 'rouse_profile':
+        if vertical_update_scheme == 'geometric':
+            required_fields = required_fields + ('q3d_vertical_velocity_gradient',)
+        elif vertical_update_scheme == 'rouse_profile':
             required_fields = required_fields + ('rouse_number',)
         missing = [name for name in required_fields if name not in self.particles]
         if missing:

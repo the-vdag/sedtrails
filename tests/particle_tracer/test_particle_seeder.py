@@ -3000,7 +3000,7 @@ def test_q3d_full_update_refreshes_selected_shear_between_substeps(vertical_sche
         profile_roughness_height=ones * 0.001,
         total_transport_centroid_elevation=ones * 0.1,
         q3d_velocity_deficit_coefficient=zeros,
-        q3d_vertical_velocity_gradient=zeros,
+        q3d_vertical_velocity_gradient=None,
         turbulent_shields_number=ones,
         critical_shields_number=0.05,
         settling_velocity=0.0,

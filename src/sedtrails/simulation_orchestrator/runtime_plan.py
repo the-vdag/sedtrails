@@ -344,7 +344,6 @@ def required_physics_fields(
             'mean_shear_velocity',
             'selected_shear_velocity',
             'selected_bed_shear_stress',
-            'rouse_number',
             'skin_roughness_height',
             'profile_roughness_height',
             'total_transport_centroid_elevation',
@@ -367,13 +366,29 @@ def required_physics_fields(
                 ),
             )
         if computation_type == 'Q3D':
+            vertical_scheme = str(
+                method_config.get('q3d_vertical_update_scheme', 'geometric')
+            ).strip().lower().replace('-', '_')
+            vertical_scheme = {
+                'centroid': 'centroid_floor',
+                'centroid_floor_method': 'centroid_floor',
+                'rouse': 'rouse_profile',
+                'rouse_sample': 'rouse_profile',
+                'rouse_sampling': 'rouse_profile',
+            }.get(vertical_scheme, vertical_scheme)
             fields = (
                 *fields,
                 'q3d_velocity_deficit_coefficient',
-                'q3d_vertical_velocity_gradient',
                 'turbulent_shields_number',
                 'q3d_entrainment_height_above_bed',
             )
+            if vertical_scheme == 'geometric':
+                fields = (*fields, 'q3d_vertical_velocity_gradient')
+            elif (
+                vertical_scheme == 'rouse_profile'
+                or bool(method_config.get('q3d_save_first_substep_diagnostics', False))
+            ):
+                fields = (*fields, 'rouse_number')
         return tuple(_unique_preserving_order(fields))
     if method_name == 'passive_tracer':
         return tuple(_unique_preserving_order(flow_field_names))

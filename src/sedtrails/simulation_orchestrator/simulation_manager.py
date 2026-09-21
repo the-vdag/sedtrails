@@ -1671,6 +1671,12 @@ class Simulation:
                                 entrainment_config.get('method', 'shields_threshold')
                             ).lower().replace('-', '_')
                             entrainment_method_key = entrainment_method
+                            q3d_vertical_update_scheme = population._normalize_q3d_vertical_update_scheme(
+                                config_value('q3d_vertical_update_scheme', 'geometric')
+                            )
+                            q3d_save_first_substep_diagnostics = bool(
+                                config_value('q3d_save_first_substep_diagnostics', False)
+                            )
                             entrainment_frequency = (
                                 scalar_field('macdonald_entrainment_frequency')
                                 if entrainment_method_key in {'entrainment_frequency', 'frequency'}
@@ -1688,14 +1694,25 @@ class Simulation:
                                     profile_roughness_height=scalar_field('profile_roughness_height'),
                                     total_transport_centroid_elevation=scalar_field('total_transport_centroid_elevation'),
                                     q3d_velocity_deficit_coefficient=scalar_field('q3d_velocity_deficit_coefficient'),
-                                    q3d_vertical_velocity_gradient=scalar_field('q3d_vertical_velocity_gradient'),
+                                    q3d_vertical_velocity_gradient=(
+                                        scalar_field('q3d_vertical_velocity_gradient')
+                                        if q3d_vertical_update_scheme == 'geometric'
+                                        else None
+                                    ),
                                     turbulent_shields_number=scalar_field('turbulent_shields_number'),
                                     critical_shields_number=tracer_plan.converter.grain_properties.get('critical_shields'),
                                     settling_velocity=tracer_plan.converter.grain_properties.get('settling_velocity'),
                                     water_depth=scalar_field('water_depth'),
                                     skin_roughness_height=scalar_field('skin_roughness_height'),
                                     entrainment_height_above_bed=scalar_field('q3d_entrainment_height_above_bed'),
-                                    rouse_number=scalar_field('rouse_number'),
+                                    rouse_number=(
+                                        scalar_field('rouse_number')
+                                        if (
+                                            q3d_vertical_update_scheme == 'rouse_profile'
+                                            or q3d_save_first_substep_diagnostics
+                                        )
+                                        else None
+                                    ),
                                     K_Et=config_value('q3d_horizontal_diffusion_factor', 0.15),
                                     K_Ev=config_value('q3d_vertical_diffusion_factor', 0.15),
                                     q3d_horizontal_diffusion_enabled=config_value(
@@ -1708,19 +1725,16 @@ class Simulation:
                                         'probability_law',
                                         'poisson',
                                     ),
-                                    q3d_vertical_update_scheme=config_value('q3d_vertical_update_scheme', 'geometric'),
+                                    q3d_vertical_update_scheme=q3d_vertical_update_scheme,
                                     q3d_deposition_threshold_parameter=deposition_config.get('threshold_parameter', 'skin_roughness'),
                                     q3d_deposition_threshold_value=deposition_config.get('threshold_value', 0.25),
                                     q3d_deposition_aks_factor=deposition_config.get('AksFac', 1.0),
                                     grain_diameter=physics_config.grain_diameter,
                                     q3d_motion_substeps=config_value('q3d_motion_substeps', 1),
-                                    q3d_save_first_substep_diagnostics=config_value(
-                                        'q3d_save_first_substep_diagnostics',
-                                        False,
-                                    ),
+                                    q3d_save_first_substep_diagnostics=q3d_save_first_substep_diagnostics,
                                     q3d_diagnostics=(
                                         'full'
-                                        if config_value('q3d_save_first_substep_diagnostics', False)
+                                        if q3d_save_first_substep_diagnostics
                                         else 'minimal'
                                     ),
                                 )
