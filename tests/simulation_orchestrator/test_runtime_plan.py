@@ -388,6 +388,26 @@ def test_macdonald_q3d_full_diagnostics_preserve_rouse_number():
     assert 'q3d_vertical_velocity_gradient' not in fields
 
 
+def test_macdonald_q3d_field_plan_uses_merged_diagnostics_setting():
+    population_config = _population_config(
+        {
+            'macdonald': {
+                'flow_field_name': ['centroid_particle_velocity'],
+                'computationType': 'Q3D',
+                'q3d_vertical_update_scheme': 'geometric',
+            }
+        }
+    )
+    plan = build_population_runtime_plans(
+        [population_config],
+        [object()],
+        {'q3d_save_first_substep_diagnostics': True},
+    )[0]
+
+    assert 'q3d_vertical_velocity_gradient' in plan.tracer.required_physics_fields
+    assert 'rouse_number' in plan.tracer.required_physics_fields
+
+
 def test_build_plan_sedtrails_data_copies_only_required_physics_fields():
     """Copy only required converted physics fields into plan-local sedtrails data."""
     source_data = _FakeSedtrailsData()

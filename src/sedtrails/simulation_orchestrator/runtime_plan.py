@@ -240,6 +240,17 @@ def _build_population_runtime_plan(
     physics_config = build_physics_config(base_physics_config, population_config, method_name, method_config)
     tracer_config = {method_name: dict(method_config)}
     converter = PhysicsConverter(physics_config, tracer_config)
+    runtime_field_config = dict(method_config)
+    runtime_field_config['q3d_vertical_update_scheme'] = getattr(
+        physics_config,
+        'q3d_vertical_update_scheme',
+        runtime_field_config.get('q3d_vertical_update_scheme', 'geometric'),
+    )
+    runtime_field_config['q3d_save_first_substep_diagnostics'] = getattr(
+        physics_config,
+        'q3d_save_first_substep_diagnostics',
+        runtime_field_config.get('q3d_save_first_substep_diagnostics', False),
+    )
 
     return PopulationRuntimePlan(
         population_index=population_index,
@@ -250,7 +261,7 @@ def _build_population_runtime_plan(
             method_config=method_config,
             flow_field_names=flow_field_names,
             transport_probability_method=transport_probability_method,
-            required_physics_fields=required_physics_fields(method_name, flow_field_names, method_config),
+            required_physics_fields=required_physics_fields(method_name, flow_field_names, runtime_field_config),
             converter=converter,
         ),
     )
@@ -384,7 +395,7 @@ def required_physics_fields(
             )
             if vertical_scheme == 'geometric':
                 fields = (*fields, 'q3d_vertical_velocity_gradient')
-            elif (
+            if (
                 vertical_scheme == 'rouse_profile'
                 or bool(method_config.get('q3d_save_first_substep_diagnostics', False))
             ):
