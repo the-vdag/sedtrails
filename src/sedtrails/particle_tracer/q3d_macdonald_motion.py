@@ -1259,24 +1259,33 @@ class Q3DMacdonaldMotionMixin:
             particle_u[active_indices] = particle_u_active
             particle_v[active_indices] = particle_v_active
 
-            # Vertical velocity combines continuity advection (MacDonald
-            # Eqs. 41-42), particle settling, and the vertical random walk from
-            # Eq. 52, all evaluated at the old position for this substep.
-            vertical_gradient_active = np.nan_to_num(
-                np.asarray(self.particles['q3d_vertical_velocity_gradient'], dtype=float)[active_indices],
-                nan=0.0,
-            )
-            vertical_advection_active = vertical_gradient_active * (waterdepth_active - z_p_active)
             settling_active = np.nan_to_num(
                 np.asarray(self.particles['settling_velocity'], dtype=float)[active_indices],
                 nan=0.0,
             )
-            particle_w_active = np.nan_to_num(
-                vertical_advection_active - settling_active + random_vertical_active,
-                nan=0.0,
-                posinf=0.0,
-                neginf=0.0,
-            )
+            if vertical_update_scheme in {'centroid_floor', 'rouse_profile'}:
+                # These schemes do not use a velocity-based vertical update:
+                # centroid_floor applies settling constrained by z_c, while
+                # rouse_profile samples z_p directly from its distribution.
+                # Avoid calculating or exporting an inoperative w_p.
+                vertical_gradient_active = np.full(active_count, np.nan, dtype=float)
+                vertical_advection_active = np.full(active_count, np.nan, dtype=float)
+                particle_w_active = np.full(active_count, np.nan, dtype=float)
+            else:
+                # Vertical velocity combines continuity advection (MacDonald
+                # Eqs. 41-42), particle settling, and the vertical random walk
+                # from Eq. 52, evaluated at the old substep position.
+                vertical_gradient_active = np.nan_to_num(
+                    np.asarray(self.particles['q3d_vertical_velocity_gradient'], dtype=float)[active_indices],
+                    nan=0.0,
+                )
+                vertical_advection_active = vertical_gradient_active * (waterdepth_active - z_p_active)
+                particle_w_active = np.nan_to_num(
+                    vertical_advection_active - settling_active + random_vertical_active,
+                    nan=0.0,
+                    posinf=0.0,
+                    neginf=0.0,
+                )
             particle_w.fill(0.0)
             vertical_advection.fill(0.0)
             particle_w[active_indices] = particle_w_active
@@ -1511,6 +1520,8 @@ class Q3DMacdonaldMotionMixin:
         self.particles['first_substep_horizontal_particle_velocity_x'] = first_substep_particle_u
         self.particles['first_substep_horizontal_particle_velocity_y'] = first_substep_particle_v
         self.particles['first_substep_horizontal_particle_velocity'] = np.hypot(first_substep_particle_u, first_substep_particle_v)
+        if vertical_update_scheme in {'centroid_floor', 'rouse_profile'}:
+            first_substep_particle_w.fill(np.nan)
         self.particles['first_substep_vertical_particle_velocity'] = first_substep_particle_w
         if save_first_substep_diagnostics:
             self.particles['first_substep_horizontal_diffusion_velocity_x'] = first_substep_horizontal_diffusion_velocity_x

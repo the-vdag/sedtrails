@@ -137,7 +137,15 @@ _VARIABLE_METADATA = {
     'first_substep_horizontal_particle_velocity_x': {'units': 'm/s', 'long_name': 'Horizontal particle velocity in the x-direction at the first Q3D substep'},
     'first_substep_horizontal_particle_velocity_y': {'units': 'm/s', 'long_name': 'Horizontal particle velocity in the y-direction at the first Q3D substep'},
     'first_substep_horizontal_particle_velocity': {'units': 'm/s', 'long_name': 'Magnitude of horizontal particle velocity at the first Q3D substep'},
-    'first_substep_vertical_particle_velocity': {'units': 'm/s', 'long_name': 'Vertical particle velocity at the first Q3D substep'},
+    'first_substep_vertical_particle_velocity': {
+        'units': 'm/s',
+        'long_name': 'Vertical particle velocity at the first Q3D substep',
+        'comment': (
+            'NaN for centroid_floor and rouse_profile: centroid_floor uses settling '
+            'constrained by the local total-transport centroid, while rouse_profile '
+            'samples height directly; neither uses a velocity-based vertical update.'
+        ),
+    },
     'q3d_entrainment_probability': {'units': '1', 'long_name': 'Q3D particle entrainment probability'},
     'q3d_entrainment_height_above_bed': {'units': 'm', 'long_name': 'Q3D particle entrainment height above the local bed'},
     'first_substep_horizontal_diffusion_velocity_x': {'units': 'm/s', 'long_name': 'Horizontal diffusion velocity in the x-direction at the first Q3D substep'},

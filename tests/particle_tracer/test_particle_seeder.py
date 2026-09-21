@@ -2955,7 +2955,8 @@ def _constant_flow_field(speed):
     }
 
 
-def test_q3d_full_update_refreshes_selected_shear_between_substeps():
+@pytest.mark.parametrize('vertical_scheme', ['centroid_floor', 'rouse_profile'])
+def test_q3d_full_update_refreshes_selected_shear_between_substeps(vertical_scheme):
     """A complete two-substep update should resample current shear after movement."""
     config = PopulationConfig(
         {
@@ -3006,10 +3007,12 @@ def test_q3d_full_update_refreshes_selected_shear_between_substeps():
         water_depth=ones * 2.0,
         skin_roughness_height=ones * 0.001,
         entrainment_height_above_bed=ones * 0.1,
+        rouse_number=ones,
         q3d_horizontal_diffusion_enabled=False,
-        q3d_vertical_update_scheme='centroid_floor',
+        q3d_vertical_update_scheme=vertical_scheme,
         q3d_motion_substeps=2,
         q3d_save_first_substep_diagnostics=True,
+        rng=np.random.default_rng(0),
     )
 
     assert population.particles['x'][0] > 0.25
@@ -3019,6 +3022,7 @@ def test_q3d_full_update_refreshes_selected_shear_between_substeps():
     assert population.particles['vertical_position_initialized'].tolist() == [True]
     assert population.particles['status_suspended'].tolist() == [True]
     assert population.particles['z'][0] >= population.particles['bed_level'][0]
+    assert np.isnan(population.particles['first_substep_vertical_particle_velocity']).all()
 
 
 def test_q3d_boundary_exit_does_not_require_preexisting_mobile_state():

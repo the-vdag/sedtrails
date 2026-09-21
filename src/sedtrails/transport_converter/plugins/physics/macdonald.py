@@ -563,17 +563,17 @@ class PhysicsPlugin(BasePhysicsPlugin):  # all classes should be called the Phys
         # in Eqs. 51-52. Shares the export_diagnostic_fields flag with add_physics()
         # (formerly a separate q3d_export_grid_diagnostics flag).
         export_q3d_grid_diagnostics = bool(getattr(self.config, 'export_diagnostic_fields', False))
+        vertical_update_scheme = (
+            str(getattr(self.config, 'q3d_vertical_update_scheme', 'geometric'))
+            .strip()
+            .lower()
+            .replace('-', '_')
+        )
         if export_q3d_grid_diagnostics:
             horizontal_diffusion_enabled = bool(
                 getattr(self.config, 'q3d_horizontal_diffusion_enabled', True)
             )
-            vertical_diffusion_enabled = (
-                str(getattr(self.config, 'q3d_vertical_update_scheme', 'geometric'))
-                .strip()
-                .lower()
-                .replace('-', '_')
-                == 'geometric'
-            )
+            vertical_diffusion_enabled = vertical_update_scheme == 'geometric'
             E_turb_hor, E_turb_vert = PhysicsPlugin.compute_turbulent_diffusion_coefficients(
                 water_depth=water_depth,
                 z_p=z_entrainment,
@@ -592,34 +592,36 @@ class PhysicsPlugin(BasePhysicsPlugin):  # all classes should be called the Phys
                 compute_vertical=vertical_diffusion_enabled,
             )
 
-        # For 2D hydrodynamic input, PTM estimates vertical flow velocity from
-        # continuity (MacDonald 2006, Eq. 42), after the Q3D vertical advection
-        # concept in Eq. 41. Here divU supplies the horizontal divergence term.
-        divU = self._get_q3d_divergence(
-            sedtrails_data.x,
-            sedtrails_data.y,
-            flow_velocity_x,
-            flow_velocity_y,
-            k=12,
-            r_max=150,
-        )
-        # This is the waterlevel gradient term in Eq. 42
-        dh_dt = PhysicsPlugin.compute_dh_dt(
-            water_depth,
-            sedtrails_data.bed_level,
-            sedtrails_data.times,
-        )
-
-        # local vertical flow velocity (Macdonald 2006, Eq. 42) at the grid level, not the live particle z_p.
         w_zp = np.zeros_like(water_depth, dtype=float)
         wet = water_depth > 0
-        q3d_vertical_velocity_gradient = PhysicsPlugin._combine_q3d_vertical_velocity_gradient(
-            dh_dt,
-            water_depth,
-            divU,
-        )
+        if vertical_update_scheme in {'centroid_floor', 'rouse_profile'}:
+            # Neither scheme consumes the continuity-based vertical velocity.
+            # Preserve the required field interface without performing the
+            # divergence or dh/dt calculations.
+            q3d_vertical_velocity_gradient = np.full_like(water_depth, np.nan, dtype=float)
+        else:
+            # For 2D hydrodynamic input, estimate vertical flow velocity from
+            # continuity (MacDonald 2006, Eqs. 41-42).
+            divU = self._get_q3d_divergence(
+                sedtrails_data.x,
+                sedtrails_data.y,
+                flow_velocity_x,
+                flow_velocity_y,
+                k=12,
+                r_max=150,
+            )
+            dh_dt = PhysicsPlugin.compute_dh_dt(
+                water_depth,
+                sedtrails_data.bed_level,
+                sedtrails_data.times,
+            )
+            q3d_vertical_velocity_gradient = PhysicsPlugin._combine_q3d_vertical_velocity_gradient(
+                dh_dt,
+                water_depth,
+                divU,
+            )
 
-        if export_q3d_grid_diagnostics:
+        if export_q3d_grid_diagnostics and vertical_update_scheme == 'geometric':
             #the local vertical flow velocity at the grid level is used to compute the vertical particle velocity at the grid level
             w_zp[wet] = q3d_vertical_velocity_gradient[wet] * (water_depth[wet] - z_entrainment[wet])
             w_zp = np.nan_to_num(w_zp, nan=0.0, posinf=0.0, neginf=0.0)
@@ -635,6 +637,9 @@ class PhysicsPlugin(BasePhysicsPlugin):  # all classes should be called the Phys
                 neginf=0.0,
             )
             vertical_particle_velocity[~wet] = 0.0
+        elif export_q3d_grid_diagnostics:
+            w_zp.fill(np.nan)
+            vertical_particle_velocity = np.full_like(water_depth, np.nan, dtype=float)
 
         # Required grid inputs for particle-resolved Q3D motion and entrainment.
         # These are interpolated to particle positions in update_q3d_particle_position.
