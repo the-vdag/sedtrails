@@ -3288,6 +3288,7 @@ def test_macdonald_2d_markov_settling_updates_probability_and_status():
     )
 
     assert population.particles['macdonald_2d_settling_probability'][0] == pytest.approx(1.0)
+    assert population.particles['macdonald_2d_settling_transition_rate'][0] == pytest.approx(10.0)
     assert population.particles['status_deposited'].tolist() == [True]
     assert population.particles['status_deposited_now'].tolist() == [True]
 

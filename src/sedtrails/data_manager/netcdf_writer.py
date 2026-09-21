@@ -54,6 +54,8 @@ _CORE_FLOAT_FIELDS = ('x', 'y', 'z', 'z_p', 'z_burial', 'burial_depth', 'mixing_
 _MACDONALD_2D_FLOAT_FIELDS = (
     'macdonald_2d_selected_shear_velocity',
     'macdonald_2d_max_shear_velocity',
+    'macdonald_2d_settling_transition_rate',
+    'macdonald_2d_settling_probability',
     'centroid_particle_velocity_x',
     'centroid_particle_velocity_y',
     'centroid_particle_velocity',
@@ -166,6 +168,11 @@ _VARIABLE_METADATA = {
     'first_substep_skin_roughness_height': {'units': 'm', 'long_name': 'Local skin roughness height at the first Q3D substep'},
     'macdonald_2d_selected_shear_velocity': {'units': 'm/s', 'long_name': 'MacDonald 2D particle-local selected shear velocity before movement'},
     'macdonald_2d_max_shear_velocity': {'units': 'm/s', 'long_name': 'MacDonald 2D particle-local maximum shear velocity before movement'},
+    'macdonald_2d_settling_transition_rate': {'units': 's-1', 'long_name': 'MacDonald 2D Markov settling transition rate'},
+    'macdonald_2d_settling_probability': {
+        'units': '1', 'long_name': 'MacDonald 2D Markov settling probability threshold',
+        'comment': 'P = 1 - exp(-transition_rate * timestep); deposition occurs for an eligible mobile particle when its uniform random draw is less than P.',
+    },
     'first_substep_selected_shear_velocity': {'units': 'm/s', 'long_name': 'MacDonald Q3D particle-local selected shear velocity at the first substep'},
     'first_substep_max_shear_velocity': {'units': 'm/s', 'long_name': 'MacDonald Q3D particle-local maximum shear velocity at the first substep'},
     'first_substep_profile_roughness_height': {'units': 'm', 'long_name': 'Profile roughness height at the first Q3D substep'},

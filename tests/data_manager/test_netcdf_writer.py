@@ -265,6 +265,10 @@ class TestNetCDFWriterStreaming:
         assert 'vertical_position_initialized' in handle.variables
         assert 'macdonald_2d_selected_shear_velocity' in handle.variables
         assert 'macdonald_2d_max_shear_velocity' in handle.variables
+        assert 'macdonald_2d_settling_transition_rate' in handle.variables
+        assert 'macdonald_2d_settling_probability' in handle.variables
+        assert handle['macdonald_2d_settling_transition_rate'].units == 's-1'
+        assert 'probability threshold' in handle['macdonald_2d_settling_probability'].long_name
         assert 'centroid_particle_velocity_x' in handle.variables
         assert 'centroid_particle_velocity_y' in handle.variables
         assert 'centroid_particle_velocity' in handle.variables

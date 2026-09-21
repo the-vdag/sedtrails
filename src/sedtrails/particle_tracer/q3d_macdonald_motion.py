@@ -1891,8 +1891,8 @@ class Q3DMacdonaldMotionMixin:
         eligible = np.asarray(self.particles['status_eligible'], dtype=bool)
 
         previous_deposited = np.asarray(self.particles['status_deposited'], dtype=bool)
-        settling_probability = np.zeros(n_particles, dtype=float)
-        transition_rate = np.zeros(n_particles, dtype=float)
+        settling_probability = np.full(n_particles, np.nan, dtype=float)
+        transition_rate = np.full(n_particles, np.nan, dtype=float)
 
         if method == 'shields_threshold':
             local_shields = np.asarray(self.particles['macdonald_2d_shields_number'], dtype=float)
