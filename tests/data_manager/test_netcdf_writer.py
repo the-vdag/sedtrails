@@ -308,6 +308,35 @@ class TestNetCDFWriterStreaming:
         assert np.all(np.ma.getmaskarray(slot1))
         handle.close()
 
+    def test_sync_hdf_error_reopens_rewrites_and_retries(self, writer, monkeypatch):
+        class SyncHandle:
+            def __init__(self, error=None):
+                self.error = error
+                self.sync_calls = 0
+
+            def sync(self):
+                self.sync_calls += 1
+                if self.error is not None:
+                    raise self.error
+
+        failed = SyncHandle(RuntimeError('NetCDF: HDF error'))
+        recovered = SyncHandle()
+        written_handles = []
+        monkeypatch.setattr(
+            writer,
+            '_write_slot',
+            lambda handle, populations, slot_idx, current_time: written_handles.append(handle),
+        )
+        monkeypatch.setattr(writer, '_reopen_handle', lambda handle: recovered)
+        writer._sync_interval = 1
+
+        result = writer.record_output(failed, [], slot_idx=0, current_time=0.0)
+
+        assert result is recovered
+        assert written_handles == [failed, recovered]
+        assert failed.sync_calls == 1
+        assert recovered.sync_calls == 1
+
     def test_close_returns_correct_path(self, writer, population):
         handle = writer.open_output(
             'stream.nc', self.N_SLOTS, self.N_PARTICLES,

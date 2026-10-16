@@ -626,7 +626,22 @@ class NetCDFWriter:
 
         sync_interval = getattr(self, '_sync_interval', DEFAULT_SYNC_INTERVAL)
         if sync_interval and sync_interval > 0 and self._write_count % sync_interval == 0:
-            nc_handle.sync()
+            try:
+                nc_handle.sync()
+            except (RuntimeError, OSError) as exc:
+                err_str = str(exc)
+                if not any(kw in err_str for kw in ('HDF', 'NetCDF', 'errno', 'I/O')):
+                    raise
+                logger.warning(
+                    'HDF/network error syncing slot %d: %r; reopening output file, '
+                    'rewriting the slot, and retrying sync',
+                    slot_idx,
+                    exc,
+                )
+                nc_handle = self._reopen_handle(nc_handle)
+                self._write_slot(nc_handle, populations, slot_idx, current_time)
+                nc_handle.sync()
+                logger.info('Sync retry succeeded for slot %d', slot_idx)
 
         return nc_handle
 
