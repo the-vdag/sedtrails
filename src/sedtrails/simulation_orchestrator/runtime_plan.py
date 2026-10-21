@@ -368,6 +368,12 @@ def required_physics_fields(
             fields = (*fields, 'macdonald_entrainment_frequency')
         deposition_config = method_config.get('deposition', {}) or {}
         deposition_method = str(deposition_config.get('method', 'shields_threshold')).lower().replace('-', '_')
+        if computation_type == '2D' and bool(method_config.get('export_diagnostic_fields', False)):
+            fields = (
+                *fields,
+                'suspended_transport_centroid_elevation',
+                'total_transport_centroid_elevation',
+            )
         if computation_type == '2D' and deposition_method == 'markov_settling':
             fields = (
                 *fields,

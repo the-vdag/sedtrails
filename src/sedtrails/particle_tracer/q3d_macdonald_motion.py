@@ -1670,6 +1670,8 @@ class Q3DMacdonaldMotionMixin:
         selected_shear_velocity_field=None,
         max_shear_velocity_field=None,
         entrainment_frequency_field=None,
+        suspended_transport_centroid_elevation_field=None,
+        total_transport_centroid_elevation_field=None,
     ) -> None:
         """Sample entrainment and deposition inputs at the old particle positions."""
         if len(self.particles['x']) == 0:
@@ -1688,6 +1690,14 @@ class Q3DMacdonaldMotionMixin:
             scalar_fields['macdonald_2d_max_shear_velocity'] = max_shear_velocity_field
         if entrainment_frequency_field is not None:
             scalar_fields['macdonald_2d_entrainment_frequency'] = entrainment_frequency_field
+        if suspended_transport_centroid_elevation_field is not None:
+            scalar_fields['macdonald_2d_suspended_transport_centroid_elevation'] = (
+                suspended_transport_centroid_elevation_field
+            )
+        if total_transport_centroid_elevation_field is not None:
+            scalar_fields['macdonald_2d_total_transport_centroid_elevation'] = (
+                total_transport_centroid_elevation_field
+            )
         if scalar_fields:
             self._update_particle_fields(scalar_fields)
         if particle_velocity_field is not None:

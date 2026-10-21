@@ -322,6 +322,20 @@ def test_macdonald_required_fields_include_default_transition_inputs():
     assert 'max_shields_number' in fields
 
 
+def test_macdonald_2d_export_diagnostics_preserves_transport_centroid_elevations():
+    fields = required_physics_fields(
+        'macdonald',
+        ['centroid_particle_velocity'],
+        {
+            'computationType': '2D',
+            'export_diagnostic_fields': True,
+        },
+    )
+
+    assert 'suspended_transport_centroid_elevation' in fields
+    assert 'total_transport_centroid_elevation' in fields
+
+
 @pytest.mark.parametrize(
     ('settling_height_field', 'expected_field'),
     [

@@ -59,6 +59,8 @@ _MACDONALD_2D_FLOAT_FIELDS = (
     'centroid_particle_velocity_x',
     'centroid_particle_velocity_y',
     'centroid_particle_velocity',
+    'macdonald_2d_suspended_transport_centroid_elevation',
+    'macdonald_2d_total_transport_centroid_elevation',
 )
 _Q3D_MIN_FLOAT_FIELDS = (
     'q3d_first_substep_z_p',
@@ -133,6 +135,14 @@ _VARIABLE_METADATA = {
         'units': 'm/s',
         'long_name': 'Magnitude of the MacDonald centroid particle velocity',
         'description': 'In MacDonald 2D, the local centroid advection field sampled at the particle pre-movement position. It may be nonzero for deposited or non-mobile particles; use status_mobile to identify actual mobility.',
+    },
+    'macdonald_2d_suspended_transport_centroid_elevation': {
+        'units': 'm',
+        'long_name': 'Suspended-transport centroid height above bed at the MacDonald 2D particle pre-movement position',
+    },
+    'macdonald_2d_total_transport_centroid_elevation': {
+        'units': 'm',
+        'long_name': 'Total-transport centroid height above bed at the MacDonald 2D particle pre-movement position',
     },
     'first_substep_modified_centroid_particle_velocity_x': {'units': 'm/s', 'long_name': 'Modified centroid particle velocity in the x-direction at the first Q3D substep'},
     'first_substep_modified_centroid_particle_velocity_y': {'units': 'm/s', 'long_name': 'Modified centroid particle velocity in the y-direction at the first Q3D substep'},

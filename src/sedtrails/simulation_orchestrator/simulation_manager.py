@@ -1767,6 +1767,15 @@ class Simulation:
                                     selected_shear_velocity_field=scalar_field('selected_shear_velocity'),
                                     max_shear_velocity_field=scalar_field('max_shear_velocity'),
                                 )
+                                if bool(getattr(physics_config, 'export_diagnostic_fields', False)):
+                                    sampling_kwargs.update(
+                                        suspended_transport_centroid_elevation_field=scalar_field(
+                                            'suspended_transport_centroid_elevation'
+                                        ),
+                                        total_transport_centroid_elevation_field=scalar_field(
+                                            'total_transport_centroid_elevation'
+                                        ),
+                                    )
                                 with self._profile_section('sample_macdonald_2d_transition_fields'):
                                     population.sample_macdonald_2d_transition_fields(
                                         **sampling_kwargs,

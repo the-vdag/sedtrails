@@ -3202,6 +3202,24 @@ def test_macdonald_2d_samples_particle_local_shear_velocity_diagnostics():
     np.testing.assert_allclose(population.particles['macdonald_2d_shear_velocity'], [0.07])
 
 
+def test_macdonald_2d_samples_particle_local_transport_centroid_elevations():
+    population = _macdonald_2d_test_population()
+
+    population.sample_macdonald_2d_transition_fields(
+        suspended_transport_centroid_elevation_field=np.array([0.01, 0.03, 0.03, 0.01]),
+        total_transport_centroid_elevation_field=np.array([0.02, 0.06, 0.06, 0.02]),
+    )
+
+    np.testing.assert_allclose(
+        population.particles['macdonald_2d_suspended_transport_centroid_elevation'],
+        [0.02],
+    )
+    np.testing.assert_allclose(
+        population.particles['macdonald_2d_total_transport_centroid_elevation'],
+        [0.04],
+    )
+
+
 def test_macdonald_2d_frequency_entrainment_uses_poisson_probability():
     population = _macdonald_2d_test_population()
     population.particles['status_deposited'][:] = True

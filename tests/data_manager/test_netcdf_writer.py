@@ -296,6 +296,31 @@ class TestNetCDFWriterStreaming:
         assert handle['first_substep_selected_shear_velocity'].units == 'm/s'
         handle.close()
 
+    def test_streaming_writes_m2d_transport_centroid_elevations(self, writer, population):
+        population.particles['macdonald_2d_suspended_transport_centroid_elevation'] = np.array(
+            [0.01, 0.02, 0.03]
+        )
+        population.particles['macdonald_2d_total_transport_centroid_elevation'] = np.array(
+            [0.04, 0.05, 0.06]
+        )
+        handle = writer.open_output(
+            'centroid_elevations.nc', self.N_SLOTS, self.N_PARTICLES,
+            self.N_POPULATIONS, self.N_FLOWFIELDS, [population], ['vel'],
+        )
+
+        writer.record_output(handle, [population], slot_idx=0, current_time=0.0)
+
+        np.testing.assert_allclose(
+            handle['macdonald_2d_suspended_transport_centroid_elevation'][0],
+            [0.01, 0.02, 0.03],
+        )
+        np.testing.assert_allclose(
+            handle['macdonald_2d_total_transport_centroid_elevation'][0],
+            [0.04, 0.05, 0.06],
+        )
+        assert handle['macdonald_2d_total_transport_centroid_elevation'].units == 'm'
+        handle.close()
+
     def test_unwritten_slots_are_fill_values(self, writer, population):
         """Slots not yet written should contain the declared fill value, not zeros."""
         handle = writer.open_output(
