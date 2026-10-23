@@ -1474,6 +1474,126 @@ class PhysicsPlugin(BasePhysicsPlugin):  # all classes should be called the Phys
 
 
     @staticmethod
+    def calculate_rouse_concentration_profile(
+        z,
+        reference_concentration,
+        reference_height,
+        water_depth,
+        rouse_number,
+    ):
+        """Evaluate a reference-concentration Rouse profile.
+
+        The profile is defined from the reference height ``a`` to the water
+        surface and satisfies ``c(a) = c_a``::
+
+            c(z) = c_a * (((H - z) / z) / ((H - a) / a)) ** P
+
+        Values outside ``a <= z < H`` or profiles with invalid parameters are
+        returned as NaN.  Evaluation in log space avoids overflow for steep
+        profiles.
+        """
+        z, c_a, a, depth, rouse = np.broadcast_arrays(
+            np.asarray(z, dtype=float),
+            np.asarray(reference_concentration, dtype=float),
+            np.asarray(reference_height, dtype=float),
+            np.asarray(water_depth, dtype=float),
+            np.asarray(rouse_number, dtype=float),
+        )
+        concentration = np.full(z.shape, np.nan, dtype=float)
+        valid = (
+            np.isfinite(z)
+            & np.isfinite(c_a)
+            & np.isfinite(a)
+            & np.isfinite(depth)
+            & np.isfinite(rouse)
+            & (c_a >= 0.0)
+            & (a > 0.0)
+            & (z >= a)
+            & (z < depth)
+            & (a < depth)
+            & (rouse >= 0.0)
+        )
+        zero = valid & (c_a == 0.0)
+        concentration[zero] = 0.0
+        positive = valid & (c_a > 0.0)
+        if np.any(positive):
+            log_ratio = (
+                np.log(depth[positive] - z[positive])
+                - np.log(z[positive])
+                - np.log(depth[positive] - a[positive])
+                + np.log(a[positive])
+            )
+            log_concentration = np.log(c_a[positive]) + rouse[positive] * log_ratio
+            concentration[positive] = np.exp(np.clip(log_concentration, -745.0, 709.0))
+        return concentration
+
+
+    @staticmethod
+    def calculate_rouse_suspended_transport_centroid(
+        reference_concentration,
+        reference_height,
+        water_depth,
+        rouse_number,
+        shear_velocity,
+        roughness_height,
+        integration_points=1000,
+    ):
+        """Integrate the suspended-transport centroid from Rouse and log-law profiles.
+
+        The returned height above the bed is
+
+        ``z_s = integral(z u(z) c(z) dz) / integral(u(z) c(z) dz)``
+
+        over ``a <= z < H``.  ``u(z)`` is evaluated with
+        :meth:`calculate_macdonald_loglaw_velocity_at_z`. Scalar and broadcastable
+        array inputs are accepted.
+        """
+        if int(integration_points) < 2:
+            raise ValueError('integration_points must be at least 2.')
+
+        c_a, a, depth, rouse, shear, roughness = np.broadcast_arrays(
+            np.asarray(reference_concentration, dtype=float),
+            np.asarray(reference_height, dtype=float),
+            np.asarray(water_depth, dtype=float),
+            np.asarray(rouse_number, dtype=float),
+            np.asarray(shear_velocity, dtype=float),
+            np.asarray(roughness_height, dtype=float),
+        )
+        centroid = np.full(c_a.shape, np.nan, dtype=float)
+        valid = (
+            np.isfinite(c_a)
+            & np.isfinite(a)
+            & np.isfinite(depth)
+            & np.isfinite(rouse)
+            & np.isfinite(shear)
+            & np.isfinite(roughness)
+            & (c_a > 0.0)
+            & (a > 0.0)
+            & (a < depth)
+            & (rouse >= 0.0)
+            & (shear > 0.0)
+            & (roughness > 0.0)
+        )
+        for index in zip(*np.nonzero(valid)) if centroid.ndim else [()]:
+            if not bool(valid[index]):
+                continue
+            local_a = float(a[index])
+            local_depth = float(depth[index])
+            z = np.geomspace(local_a, np.nextafter(local_depth, 0.0), int(integration_points))
+            concentration = PhysicsPlugin.calculate_rouse_concentration_profile(
+                z, c_a[index], local_a, local_depth, rouse[index]
+            )
+            velocity = PhysicsPlugin.calculate_macdonald_loglaw_velocity_at_z(
+                np.full_like(z, shear[index]), z, np.full_like(z, roughness[index])
+            )
+            transport = velocity * concentration
+            denominator = np.trapezoid(transport, z)
+            if np.isfinite(denominator) and denominator > 0.0:
+                centroid[index] = np.trapezoid(z * transport, z) / denominator
+        return centroid
+
+
+    @staticmethod
 
     def cap_particle_velocity(
         velocity: xr.DataArray,

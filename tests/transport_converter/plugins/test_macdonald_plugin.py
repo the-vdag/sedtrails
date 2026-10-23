@@ -558,6 +558,42 @@ def test_chezy_log_profile_recovers_depth_averaged_speed():
     assert integrated_average == pytest.approx(depth_averaged_speed, rel=1e-4)
 
 
+def test_rouse_concentration_profile_passes_through_reference_point():
+    z = np.array([0.1, 0.2, 0.8])
+    concentration = PhysicsPlugin.calculate_rouse_concentration_profile(
+        z,
+        reference_concentration=2.5,
+        reference_height=0.1,
+        water_depth=1.0,
+        rouse_number=1.2,
+    )
+
+    assert concentration[0] == pytest.approx(2.5)
+    assert np.all(np.diff(concentration) < 0.0)
+
+
+def test_rouse_transport_centroid_uses_concentration_and_loglaw_profiles():
+    kwargs = dict(
+        reference_height=0.05,
+        water_depth=1.0,
+        rouse_number=1.0,
+        shear_velocity=0.05,
+        roughness_height=0.001,
+        integration_points=4000,
+    )
+    centroid = PhysicsPlugin.calculate_rouse_suspended_transport_centroid(
+        reference_concentration=1.0,
+        **kwargs,
+    )
+    scaled_centroid = PhysicsPlugin.calculate_rouse_suspended_transport_centroid(
+        reference_concentration=7.0,
+        **kwargs,
+    )
+
+    assert 0.05 < centroid < 1.0
+    assert scaled_centroid == pytest.approx(centroid, rel=1e-12)
+
+
 def test_vertical_diffusivity_has_depth_scaling_and_consistent_implementations():
     """Keep Q3D vertical diffusivity dimensional in grid and particle paths."""
     water_depth = np.array([1.0, 2.0])
