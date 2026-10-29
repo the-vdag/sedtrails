@@ -134,9 +134,9 @@
                   "properties": {
                     "method": {
                       "type": "string",
-                      "enum": ["shields_threshold", "non_zero_particle_velocity", "entrainment_frequency"],
+                      "enum": ["shields_threshold", "entrainment_frequency"],
                       "default": "shields_threshold",
-                      "description": "MacDonald 2D and Q3D bed-to-suspension transition rule. shields_threshold applies the critical Shields criterion; non_zero_particle_velocity makes every eligible deposited particle available and lets its calculated transport velocity determine motion; entrainment_frequency uses the configured probability law."
+                      "description": "MacDonald 2D and Q3D bed-to-suspension transition rule. shields_threshold entrains where the maximum (noise-free) Shields number exceeds the critical Shields number; entrainment_frequency uses the configured probability law."
                     },
                     "probability_law": {
                       "type": "string",

@@ -978,8 +978,6 @@ class Simulation:
                     'macdonald_entrainment_frequency',
                 )
             }
-        elif method == 'non_zero_particle_velocity':
-            sampling_kwargs = {'particle_velocity_field': particle_velocity_field}
         else:
             sampling_kwargs = {
                 'shields_number_field': retriever.get_scalar_field_bounds(

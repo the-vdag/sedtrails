@@ -3318,7 +3318,7 @@ def test_macdonald_2d_frequency_entrainment_uses_poisson_probability():
 
 @pytest.mark.parametrize(
     'entrainment_method',
-    ['shields_threshold', 'non_zero_particle_velocity', 'entrainment_frequency'],
+    ['shields_threshold', 'entrainment_frequency'],
 )
 @pytest.mark.parametrize('deposition_method', ['shields_threshold', 'markov_settling'])
 def test_macdonald_2d_entrainment_deposition_combinations(
@@ -3353,6 +3353,68 @@ def test_macdonald_2d_entrainment_deposition_combinations(
     assert population.particles['status_deposited'].tolist() == [False]
     assert population.particles['status_suspended'].tolist() == [True]
     assert population.particles['status_mobile'].tolist() == [True]
+
+@pytest.mark.parametrize('max_shields', [0.04, 0.06])
+def test_macdonald_2d_and_q3d_shields_threshold_agree(max_shields):
+    """2D and Q3D use the same shared shields_threshold rule."""
+    population_2d = _macdonald_2d_test_population()
+    population_2d.particles['status_deposited'][:] = True
+    population_2d.particles['status_suspended'][:] = False
+    population_2d.sample_macdonald_2d_transition_fields(shields_number_field=np.full(4, max_shields))
+    population_2d.update_macdonald_2d_entrainment(
+        method='shields_threshold',
+        critical_shields_number=0.05,
+        current_timestep=1.0,
+    )
+    population_q3d = _q3d_bed_particle_after_one_step(max_shields=max_shields, turbulent_shields=0.05)
+
+    expected = [max_shields > 0.05]
+    assert population_2d.particles['status_entrained_now'].tolist() == expected
+    assert population_q3d.particles['status_entrained_now'].tolist() == expected
+    np.testing.assert_allclose(
+        population_2d.particles['macdonald_2d_entrainment_probability'],
+        [float(expected[0])],
+    )
+
+
+@pytest.mark.parametrize(
+    ('law', 'frequency_dt', 'expected'),
+    [('poisson', 0.5, -np.expm1(-0.5)), ('linear', 0.5, 0.5), ('linear', 2.0, 1.0)],
+)
+def test_shared_entrainment_frequency_probability_laws(law, frequency_dt, expected):
+    _, probability = ParticlePopulation._select_macdonald_entrainment(
+        np.array([True]),
+        None,
+        None,
+        1.0,
+        method='entrainment_frequency',
+        entrainment_frequency=np.array([frequency_dt]),
+        probability_law=law,
+        rng=np.random.default_rng(0),
+    )
+    np.testing.assert_allclose(probability, [expected])
+
+
+@pytest.mark.parametrize('method', ['non_zero_particle_velocity', 'unknown'])
+def test_shared_entrainment_rejects_removed_or_unknown_methods(method):
+    with pytest.raises(ValueError, match='Unsupported MacDonald entrainment method'):
+        ParticlePopulation._select_macdonald_entrainment(
+            np.array([True]), np.array([0.1]), 0.05, 1.0, method=method,
+        )
+
+
+def test_shared_entrainment_rejects_probability_law_aliases():
+    with pytest.raises(ValueError, match="probability_law must be 'poisson' or 'linear'"):
+        ParticlePopulation._select_macdonald_entrainment(
+            np.array([True]),
+            None,
+            None,
+            1.0,
+            method='entrainment_frequency',
+            entrainment_frequency=np.array([1.0]),
+            probability_law='eq68',
+        )
+
 
 def test_markov_settling_height_choice_changes_transition_rate():
     shallow_rate, _ = ParticlePopulation._markov_settling_rate(0.01, 0.1, 0.05, 0.001)

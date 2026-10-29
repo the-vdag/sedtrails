@@ -482,95 +482,88 @@ class Q3DMacdonaldMotionMixin:
 
     @staticmethod
 
-    def _select_q3d_entrainment(
+    def _select_macdonald_entrainment(
         available,
-        turbulent_shields,
+        shields,
         critical_shields,
         dt,
         *,
-        mode='shields_threshold',
+        method='shields_threshold',
         entrainment_frequency=None,
         probability_law='poisson',
         rng=None,
     ):
         """
-        Select available bed particles that enter Q3D suspension.
+        Select available bed particles that enter suspension (MacDonald 2D and Q3D).
 
         Parameters
         ----------
         available : array of bool
-            Particles that are released, alive, inside the domain, exposed, and
-            not already suspended.
-        turbulent_shields : array
-            Local Shields number compared with critical_shields in
-            shields_threshold mode [-]. The caller passes the noise-free
-            maximum Shields number there.
-        critical_shields : array
-            Particle critical Shields number [-].
+            Bed particles that may be entrained this timestep.
+        shields : array or None
+            Noise-free maximum Shields number at each particle [-]. Required
+            for shields_threshold.
+        critical_shields : float, array or None
+            Critical Shields number [-]. Required for shields_threshold.
         dt : float
-            Outer particle timestep [s].
-        mode : str
-            Entrainment rule:
-            - shields_threshold: deterministic shields > critical_shields, using
-              the noise-free maximum Shields number (same rule as MacDonald 2D).
-            - non_zero_particle_velocity: entrain every available particle; the
-              later particle-level velocity calculation decides whether it moves.
-            - entrainment_frequency: stochastic entrainment from f_e. The
-              probability law can be poisson, P = 1 - exp(-f_e dt), or
-              linear, P = min(f_e dt, 1), matching the Eq. 68 small-dt form.
+            Particle timestep [s].
+        method : str
+            - shields_threshold: entrain where shields > critical_shields.
+            - entrainment_frequency: entrain with probability P from the
+              entrainment frequency f_e and probability_law.
         entrainment_frequency : array or None
-            Entrainment frequency [1/s] for entrainment_frequency mode,
-            from the shared MacDonald entrainment-frequency field.
+            Entrainment frequency f_e [1/s]. Required for entrainment_frequency.
         probability_law : str
-            Probability conversion used with entrainment_frequency mode:
-            poisson uses P = 1 - exp(-f_e dt); linear uses P = min(f_e dt, 1).
+            For entrainment_frequency only: poisson, P = 1 - exp(-f_e dt), or
+            linear, P = min(f_e dt, 1) (MacDonald Eq. 68).
         rng : random generator, optional
-            Random source used for stochastic entrainment.
+            Random source for entrainment_frequency.
 
         Returns
         -------
         entrained_now, entrainment_probability : tuple of arrays
-            Boolean entrainment decision and diagnostic probability [-].
+            Boolean entrainment decision and probability [-]. In
+            shields_threshold mode the probability is 1 for entrained
+            particles and 0 otherwise.
         """
         available = np.asarray(available, dtype=bool)
-        mode = str(mode or 'shields_threshold').strip().lower().replace('-', '_')
-        probability = np.zeros_like(turbulent_shields, dtype=float)
+        method = str(method or 'shields_threshold').strip().lower().replace('-', '_')
 
-        if mode in {'shields', 'shields_threshold', 'critical_shields'}:
-            can_entrain = (
-                np.isfinite(critical_shields)
+        if method == 'shields_threshold':
+            if shields is None:
+                raise ValueError('A maximum Shields number is required for shields_threshold entrainment.')
+            if critical_shields is None:
+                raise ValueError('critical_shields_number is required for shields_threshold entrainment.')
+            shields = np.asarray(shields, dtype=float)
+            critical_shields = np.broadcast_to(np.asarray(critical_shields, dtype=float), available.shape)
+            entrained_now = (
+                available
+                & np.isfinite(shields)
+                & np.isfinite(critical_shields)
                 & (critical_shields > 0.0)
-                & (turbulent_shields > critical_shields)
+                & (shields > critical_shields)
             )
-            probability[can_entrain] = 1.0
-            return available & can_entrain, probability
+            return entrained_now, entrained_now.astype(float)
 
-        if mode in {'non_zero_particle_velocity', 'nonzero_particle_velocity', 'all', 'all_available', 'available'}:
-            probability[available] = 1.0
-            return available.copy(), probability
-
-        if mode in {'entrainment_frequency', 'frequency'}:
+        if method == 'entrainment_frequency':
             if entrainment_frequency is None:
                 raise ValueError('entrainment_frequency is required when entrainment.method is entrainment_frequency.')
-            frequency = np.maximum(np.nan_to_num(entrainment_frequency, nan=0.0), 0.0)
-            probability_law = str(probability_law or 'poisson').strip().lower().replace('-', '_')
-            frequency_dt = frequency * dt
-            if probability_law in {'poisson', 'exponential'}:
-                probability = np.clip(-np.expm1(-frequency_dt), 0.0, 1.0)
-            elif probability_law in {'linear', 'macdonald', 'macdonald_eq68', 'eq68'}:
-                probability = np.clip(frequency_dt, 0.0, 1.0)
+            frequency = np.maximum(np.nan_to_num(np.asarray(entrainment_frequency, dtype=float), nan=0.0), 0.0)
+            frequency_dt = frequency * float(dt)
+            law = str(probability_law or 'poisson').strip().lower().replace('-', '_')
+            if law == 'poisson':
+                probability = -np.expm1(-frequency_dt)
+            elif law == 'linear':
+                probability = frequency_dt
             else:
-                raise ValueError(
-                    "Unsupported entrainment probability law "
-                    f"{probability_law!r}. Expected poisson or linear."
-                )
-            probability = np.broadcast_to(probability, available.shape).astype(float, copy=True)
+                raise ValueError("probability_law must be 'poisson' or 'linear'.")
+            probability = np.broadcast_to(np.clip(probability, 0.0, 1.0), available.shape).astype(float, copy=True)
             random_source = np.random if rng is None else rng
             return available & (random_source.random(len(available)) < probability), probability
 
         raise ValueError(
-            "Unsupported MacDonald entrainment method "
-            f"{mode!r}. Expected shields_threshold, non_zero_particle_velocity, or entrainment_frequency."
+            f'Unsupported MacDonald entrainment method {method!r}. '
+            'Expected shields_threshold or entrainment_frequency.'
         )
 
     @staticmethod
@@ -797,8 +790,7 @@ class Q3DMacdonaldMotionMixin:
             it with critical_shields_number, the same rule as MacDonald 2D.
         entrainment_method : str
             Rule used to decide which available bed particles enter suspension.
-            Supported values are shields_threshold, non_zero_particle_velocity,
-            and entrainment_frequency.
+            Supported values are shields_threshold and entrainment_frequency.
         entrainment_frequency : float or array, optional
             Shared MacDonald entrainment-frequency field [1/s] used when
             entrainment_method is entrainment_frequency.
@@ -827,10 +819,9 @@ class Q3DMacdonaldMotionMixin:
 
         Notes
         -----
-        Q3D entrainment is handled by _select_q3d_entrainment. The default
-        behavior is deterministic Shields-threshold entrainment, but the same
-        transport loop can also use legacy flow-speed, all-available, or
-        stochastic entrainment-frequency rules. Available particles that do not
+        Q3D entrainment is handled by _select_macdonald_entrainment, shared with
+        MacDonald 2D. The default is deterministic Shields-threshold
+        entrainment; stochastic entrainment-frequency is also supported. Available particles that do not
         entrain remain deposited at the bed. Bed particles that are not
         available are marked deposited/not suspended, but their burial_depth is
         not recomputed in this method.
@@ -1057,28 +1048,20 @@ class Q3DMacdonaldMotionMixin:
         # ------------------------------------------------------------------
         available = eligible & ~is_suspended
         entrainment_frequency = self.particles.get('macdonald_entrainment_frequency')
-        threshold_mode = str(entrainment_method or 'shields_threshold').strip().lower().replace('-', '_') in {
-            'shields',
-            'shields_threshold',
-            'critical_shields',
-        }
-        if threshold_mode and 'max_shields_number' in self.particles:
-            entrainment_shields = np.nan_to_num(self.particles['max_shields_number'], nan=0.0)
-        elif threshold_mode:
-            if np.any(available):
-                raise ValueError(
-                    "Q3D shields_threshold entrainment needs 'max_shields_number'; "
-                    'pass max_shields_number to update_q3d_particle_position.'
-                )
-            entrainment_shields = np.zeros_like(turbulent_shields)
-        else:
-            entrainment_shields = turbulent_shields
-        entrained_now, entrainment_probability = self._select_q3d_entrainment(
+        threshold_mode = (
+            str(entrainment_method or 'shields_threshold').strip().lower().replace('-', '_') == 'shields_threshold'
+        )
+        if threshold_mode and np.any(available) and 'max_shields_number' not in self.particles:
+            raise ValueError(
+                "Q3D shields_threshold entrainment needs 'max_shields_number'; "
+                'pass max_shields_number to update_q3d_particle_position.'
+            )
+        entrained_now, entrainment_probability = self._select_macdonald_entrainment(
             available,
-            entrainment_shields,
+            self.particles.get('max_shields_number', np.zeros_like(turbulent_shields)),
             critical_shields,
             dt,
-            mode=entrainment_method,
+            method=entrainment_method,
             entrainment_frequency=entrainment_frequency,
             probability_law=entrainment_probability_law,
             rng=rng,
@@ -1758,73 +1741,24 @@ class Q3DMacdonaldMotionMixin:
             raise ValueError('current_timestep must be positive and finite.')
 
         method = str(method or 'shields_threshold').strip().lower().replace('-', '_')
-        if method not in {
-            'shields_threshold',
-            'non_zero_particle_velocity',
-            'entrainment_frequency',
-        }:
-            raise ValueError(
-                f'Unsupported MacDonald 2D entrainment method {method!r}. '
-                'Expected shields_threshold, non_zero_particle_velocity, '
-                'or entrainment_frequency.'
-            )
+        if method == 'shields_threshold' and 'macdonald_2d_shields_number' not in self.particles:
+            raise ValueError("MacDonald 2D entrainment field 'macdonald_2d_shields_number' is missing.")
+        if method == 'entrainment_frequency' and 'macdonald_2d_entrainment_frequency' not in self.particles:
+            raise ValueError('macdonald_2d_entrainment_frequency must be sampled before entrainment.')
 
         eligible = np.asarray(self.particles['status_eligible'], dtype=bool)
         deposited = np.asarray(self.particles['status_deposited'], dtype=bool).copy()
         suspended = np.asarray(self.particles['status_suspended'], dtype=bool).copy()
-        candidates = eligible & deposited
-        probability = np.zeros(n_particles, dtype=float)
-
-        if method == 'shields_threshold':
-            if 'macdonald_2d_shields_number' not in self.particles:
-                raise ValueError(
-                    "MacDonald 2D entrainment field 'macdonald_2d_shields_number' is missing."
-                )
-            if critical_shields_number is None:
-                raise ValueError('critical_shields_number is required for shields_threshold entrainment.')
-            local_shields = np.asarray(self.particles['macdonald_2d_shields_number'], dtype=float)
-            critical_shields = np.broadcast_to(
-                np.asarray(critical_shields_number, dtype=float),
-                local_shields.shape,
-            )
-            entrained_now = (
-                candidates
-                & np.isfinite(local_shields)
-                & np.isfinite(critical_shields)
-                & (local_shields > critical_shields)
-            )
-        elif method == 'non_zero_particle_velocity':
-            if 'macdonald_2d_particle_velocity_magnitude' not in self.particles:
-                raise ValueError(
-                    "MacDonald 2D entrainment field "
-                    "'macdonald_2d_particle_velocity_magnitude' is missing."
-                )
-            particle_velocity = np.asarray(
-                self.particles['macdonald_2d_particle_velocity_magnitude'],
-                dtype=float,
-            )
-            nonzero_velocity = np.isfinite(particle_velocity) & (particle_velocity > 0.0)
-            entrained_now = candidates & nonzero_velocity
-        else:
-            if 'macdonald_2d_entrainment_frequency' not in self.particles:
-                raise ValueError('macdonald_2d_entrainment_frequency must be sampled before entrainment.')
-            frequency = np.maximum(
-                np.nan_to_num(
-                    np.asarray(self.particles['macdonald_2d_entrainment_frequency'], dtype=float),
-                    nan=0.0,
-                ),
-                0.0,
-            )
-            law = str(probability_law or 'poisson').strip().lower().replace('-', '_')
-            if law == 'poisson':
-                probability = -np.expm1(-frequency * float(current_timestep))
-            elif law == 'linear':
-                probability = frequency * float(current_timestep)
-            else:
-                raise ValueError("probability_law must be 'poisson' or 'linear'.")
-            probability = np.clip(probability, 0.0, 1.0)
-            random_source = np.random if rng is None else rng
-            entrained_now = candidates & (random_source.random(n_particles) < probability)
+        entrained_now, probability = self._select_macdonald_entrainment(
+            eligible & deposited,
+            self.particles.get('macdonald_2d_shields_number'),
+            critical_shields_number,
+            current_timestep,
+            method=method,
+            entrainment_frequency=self.particles.get('macdonald_2d_entrainment_frequency'),
+            probability_law=probability_law,
+            rng=rng,
+        )
 
         deposited[entrained_now] = False
         suspended[entrained_now] = True

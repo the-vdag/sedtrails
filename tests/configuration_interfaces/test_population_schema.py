@@ -550,7 +550,7 @@ def test_population_schema_rejects_max_shear_for_macdonald_profiles(tmp_path):
         {'method': 'threshold'},
         {'method': 'entrainment_frequency', 'probability_law': 'unsupported'},
         {'method': 'shields_threshold', 'probability_law': 'poisson'},
-        {'method': 'non_zero_particle_velocity', 'probability_law': 'linear'},
+        {'method': 'non_zero_particle_velocity'},
     ],
 )
 def test_population_schema_rejects_invalid_macdonald_2d_entrainment(tmp_path, entrainment):
