@@ -3037,6 +3037,80 @@ def test_q3d_full_update_refreshes_selected_shear_between_substeps(vertical_sche
     )
 
 
+def _q3d_bed_particle_after_one_step(*, max_shields, turbulent_shields, entrainment_method='shields_threshold'):
+    """Run one Q3D step for a single particle released on the bed."""
+    config = PopulationConfig(
+        {
+            'name': 'Q3D entrainment threshold test',
+            'particle_type': 'sand',
+            'transport_probability': 'no_probability',
+            'tracer_methods': {
+                'macdonald': {
+                    'flow_field_name': ['centroid_particle_velocity'],
+                    'computationType': 'Q3D',
+                }
+            },
+            'seeding': {
+                'strategy': {'point': {'locations': ['0.25,0.5']}},
+                'quantity': 1,
+                'release_start': '0',
+                'burial_depth': {'constant': 0.0},
+                'vertical_position': {'mode': 'height_above_bed', 'value': 0.0},
+            },
+        }
+    )
+    population = ParticlePopulation(
+        field_x=np.array([0.0, 1.0, 1.0, 0.0]),
+        field_y=np.array([0.0, 0.0, 1.0, 1.0]),
+        population_config=config,
+    )
+    population._current_time = 0.0
+    population.update_status()
+    zeros = np.zeros(4)
+    ones = np.ones(4)
+    flow = {'u': ones * 0.1, 'v': zeros, 'magnitude': ones * 0.1}
+    population.update_q3d_particle_position(
+        current_timestep=1.0,
+        centroid_flow_field=flow,
+        hydrodynamic_flow_field=flow,
+        bed_level_field=zeros,
+        max_shear_velocity=ones * 0.01,
+        selected_shear_velocity=ones * 0.01,
+        profile_roughness_height=ones * 0.001,
+        total_transport_centroid_elevation=ones * 0.1,
+        q3d_velocity_deficit_coefficient=zeros,
+        q3d_vertical_velocity_gradient=None,
+        turbulent_shields_number=ones * turbulent_shields,
+        max_shields_number=ones * max_shields,
+        critical_shields_number=0.05,
+        settling_velocity=0.0,
+        water_depth=ones * 2.0,
+        skin_roughness_height=ones * 0.001,
+        entrainment_height_above_bed=ones * 0.1,
+        rouse_number=ones,
+        q3d_horizontal_diffusion_enabled=False,
+        q3d_vertical_update_scheme='centroid_floor',
+        entrainment_method=entrainment_method,
+        entrainment_frequency=ones * 0.0,
+        rng=np.random.default_rng(0),
+    )
+    return population
+
+
+def test_q3d_shields_threshold_uses_noise_free_max_shields():
+    """Noisy turbulent Shields above critical must not entrain when max Shields is below it."""
+    population = _q3d_bed_particle_after_one_step(max_shields=0.04, turbulent_shields=0.06)
+    assert population.particles['status_entrained_now'].tolist() == [False]
+    assert population.particles['status_deposited'].tolist() == [True]
+
+
+def test_q3d_shields_threshold_entrains_above_critical_max_shields():
+    """Max Shields above critical entrains even if the noisy turbulent Shields is below it."""
+    population = _q3d_bed_particle_after_one_step(max_shields=0.06, turbulent_shields=0.04)
+    assert population.particles['status_entrained_now'].tolist() == [True]
+    assert population.particles['status_suspended'].tolist() == [True]
+
+
 def test_q3d_boundary_exit_does_not_require_preexisting_mobile_state():
     """Q3D advection should finalize mobility after handling an open exit."""
     population = _macdonald_2d_test_population()

@@ -502,14 +502,17 @@ class Q3DMacdonaldMotionMixin:
             Particles that are released, alive, inside the domain, exposed, and
             not already suspended.
         turbulent_shields : array
-            Local turbulent Shields number [-].
+            Local Shields number compared with critical_shields in
+            shields_threshold mode [-]. The caller passes the noise-free
+            maximum Shields number there.
         critical_shields : array
             Particle critical Shields number [-].
         dt : float
             Outer particle timestep [s].
         mode : str
             Entrainment rule:
-            - shields_threshold: deterministic turbulent_shields > critical_shields.
+            - shields_threshold: deterministic shields > critical_shields, using
+              the noise-free maximum Shields number (same rule as MacDonald 2D).
             - non_zero_particle_velocity: entrain every available particle; the
               later particle-level velocity calculation decides whether it moves.
             - entrainment_frequency: stochastic entrainment from f_e. The
@@ -698,6 +701,7 @@ class Q3DMacdonaldMotionMixin:
         skin_roughness_height: Any,
         entrainment_height_above_bed: Any,
         rouse_number: Any = None,
+        max_shields_number: Any = None,
         K_Et: float = 0.15,
         K_Ev: float | None = None,
         M_b: Any = None,
@@ -759,6 +763,7 @@ class Q3DMacdonaldMotionMixin:
             Continuity-based vertical velocity gradient term, equal to dh/hdt + div(U) [1/s].
         turbulent_shields_number : array or temporal field
             Turbulent Shields number from the MacDonald Q3D field calculation [-].
+            Includes random turbulent shear noise; used by entrainment_frequency mode.
         critical_shields_number : float or array
             Critical Shields number for this particle population [-]. This is a grain/particle
             property and is usually passed as a scalar, then broadcast to particles.
@@ -786,6 +791,10 @@ class Q3DMacdonaldMotionMixin:
         q3d_horizontal_diffusion_enabled : bool
             If false, disable horizontal turbulent diffusion while leaving
             geometric-scheme vertical diffusion unchanged.
+        max_shields_number : array or temporal field, optional
+            Noise-free Shields number from the maximum bed shear stress [-].
+            Required when entrainment_method is shields_threshold, which compares
+            it with critical_shields_number, the same rule as MacDonald 2D.
         entrainment_method : str
             Rule used to decide which available bed particles enter suspension.
             Supported values are shields_threshold, non_zero_particle_velocity,
@@ -908,6 +917,8 @@ class Q3DMacdonaldMotionMixin:
         }
         if rouse_number is not None:
             initial_particle_fields['rouse_number'] = rouse_number
+        if max_shields_number is not None:
+            initial_particle_fields['max_shields_number'] = max_shields_number
         if entrainment_frequency is not None:
             initial_particle_fields['macdonald_entrainment_frequency'] = entrainment_frequency
         if M_b is not None:
@@ -1039,14 +1050,32 @@ class Q3DMacdonaldMotionMixin:
         # ------------------------------------------------------------------
         # 4. Decide which bed particles entrain this timestep.
         #    The stochastic mode uses MacDonald's pickup/entrainment frequency
-        #    f_e (Eqs. 57 and 61) as a timestep probability (Eq. 68). The
-        #    threshold mode uses the turbulent Shields number from Eq. 59.
+        #    f_e (Eqs. 57 and 61) as a timestep probability (Eq. 68); the
+        #    turbulent shear noise enters there through f_e. The threshold mode
+        #    compares the noise-free maximum Shields number with the critical
+        #    Shields number, the same rule as MacDonald 2D.
         # ------------------------------------------------------------------
         available = eligible & ~is_suspended
         entrainment_frequency = self.particles.get('macdonald_entrainment_frequency')
+        threshold_mode = str(entrainment_method or 'shields_threshold').strip().lower().replace('-', '_') in {
+            'shields',
+            'shields_threshold',
+            'critical_shields',
+        }
+        if threshold_mode and 'max_shields_number' in self.particles:
+            entrainment_shields = np.nan_to_num(self.particles['max_shields_number'], nan=0.0)
+        elif threshold_mode:
+            if np.any(available):
+                raise ValueError(
+                    "Q3D shields_threshold entrainment needs 'max_shields_number'; "
+                    'pass max_shields_number to update_q3d_particle_position.'
+                )
+            entrainment_shields = np.zeros_like(turbulent_shields)
+        else:
+            entrainment_shields = turbulent_shields
         entrained_now, entrainment_probability = self._select_q3d_entrainment(
             available,
-            turbulent_shields,
+            entrainment_shields,
             critical_shields,
             dt,
             mode=entrainment_method,

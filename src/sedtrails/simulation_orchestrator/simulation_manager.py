@@ -1700,6 +1700,7 @@ class Simulation:
                                         else None
                                     ),
                                     turbulent_shields_number=scalar_field('turbulent_shields_number'),
+                                    max_shields_number=scalar_field('max_shields_number'),
                                     critical_shields_number=tracer_plan.converter.grain_properties.get('critical_shields'),
                                     settling_velocity=tracer_plan.converter.grain_properties.get('settling_velocity'),
                                     water_depth=scalar_field('water_depth'),
